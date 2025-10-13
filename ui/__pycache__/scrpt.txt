@@ -1,0 +1,3 @@
+
+@ Command line script to compile .ui to .py
+pyuic6 -x "mainWindow v0.1.ui" -o mainWindow.py

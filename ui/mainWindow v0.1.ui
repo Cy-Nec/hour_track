@@ -63,9 +63,12 @@
         <property name="spacing">
          <number>130</number>
         </property>
+<<<<<<< HEAD
         <property name="sizeConstraint">
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
+=======
+>>>>>>> d9b556cac17334832e92361485f750918c3036a3
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <property name="spacing">
