@@ -129,8 +129,7 @@ class Ui_MainWindow(object):
         self.gridLayout.setSpacing(3)
         self.gridLayout.setObjectName("gridLayout")
         self.tableV_hours = QtWidgets.QTableView(parent=self.tab_2)
-        self.tableV_hours.setStyleSheet("\n"
-"                                                                 ")
+        self.tableV_hours.setStyleSheet("")
         self.tableV_hours.setObjectName("tableV_hours")
         self.gridLayout.addWidget(self.tableV_hours, 0, 0, 1, 1)
         self.tabW_Slides.addTab(self.tab_2, "")
@@ -226,7 +225,7 @@ class Ui_MainWindow(object):
         self.btn_Sort.setText(_translate("MainWindow", "Сортировка"))
         self.menu_file.setTitle(_translate("MainWindow", "Файл"))
         self.menu_theme.setTitle(_translate("MainWindow", "Тема"))
-        self.menu_about.setTitle(_translate("MainWindow", "about"))
+        self.menu_about.setTitle(_translate("MainWindow", "Справка"))
         self.light.setText(_translate("MainWindow", "Светлая"))
         self.dark.setText(_translate("MainWindow", "Тёмная"))
         self.action_3.setText(_translate("MainWindow", "Открыть"))

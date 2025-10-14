@@ -317,8 +317,7 @@
         <item row="0" column="0">
          <widget class="QTableView" name="tableV_hours">
           <property name="styleSheet">
-           <string notr="true">
-                                                                 </string>
+           <string notr="true"/>
           </property>
          </widget>
         </item>
@@ -482,7 +481,7 @@
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
-     <string>about</string>
+     <string>Справка</string>
     </property>
    </widget>
    <addaction name="menu_file"/>

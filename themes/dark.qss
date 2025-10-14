@@ -1,38 +1,25 @@
 * {
-    background-color: #2d2d2d;
     color: white;
 }
-QPushButton {
-    background-color: #3a3a3a;
-    border: 1px solid #555;
-    padding: 5px;
-}
-
-/*
-* {
-    color: black;
-}
 QMainWindow {
-    background: rgb(252, 245, 228) /*rgb(198, 192, 179);*/
+    background: rgb(33, 33, 33);
 }
 
-
 QPushButton {
-    background: rgb(228, 220, 200);
+    background: rgb(71, 66, 60);
     border: 1px solid rgba(209, 200, 178, 1);
 }
 QPushButton:hover {
-    background: rgb(213, 205, 187)
+    background: rgba(61, 59, 55, 1);
 }
 QPushButton#btn_Search {
-    background: rgb(228, 220, 200);
+    background: rgb(71, 66, 60);
     border: 1px solid rgba(209, 200, 178, 1);
     border-radius: 4px;
 }
 QPushButton:hover#btn_Search {
-    background: rgb(213, 205, 187)
+    background: rgb(61, 59, 55);
 }
-
 
 QTabWidget::pane {
     border: none;
@@ -40,6 +27,7 @@ QTabWidget::pane {
 }
 QTabBar::tab {
     background: rgba(0, 0, 0, 20);
+    font-size: 14px;
 }
 QTabBar::tab:selected {
     background: rgba(255, 255, 255, 50);
@@ -48,31 +36,28 @@ QTabBar::tab:hover {
     background: rgba(255, 255, 255, 90);
 }
 
-
 QGroupBox {
     border: 1px solid rgba(209, 200, 178, 1);
     border-radius: 4px;
     margin-top: 1ex;
-    color: black;
+    color: white;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
     left: 10px;
     padding: 0 3px 0 3px;
-    color: black;
+    color: white;
 }
-
 
 QLineEdit {
-    background: rgb(228, 220, 200);
+    background: rgb(71, 66, 60);
     border-radius: 4px;
-    selection-background-color: rgb(209, 200, 178);
+    selection-background-color: rgba(95, 93, 90, 1);
 }
 
-
 QMenuBar {
-    background: rgb(252, 245, 228);
+    background-color: rgb(38, 38, 38);
 }
 QMenuBar::item {
     background: transparent;
@@ -80,6 +65,20 @@ QMenuBar::item {
     border-radius: 4px;
 }
 QMenuBar::item:selected {
-    background: rgb(228, 220, 200);
+    background: rgba(61, 59, 55, 1);
 }
-*/
+QMenu {
+    background: rgb(38, 38, 38);
+}
+QMenu::item {
+    padding: 4px 20px;
+    background: transparent;
+}
+QMenu::item:selected {
+    background: rgba(61, 59, 55, 1);
+    color: white;
+}
+
+QTableView {
+    background: rgb(38, 38, 38);
+}
