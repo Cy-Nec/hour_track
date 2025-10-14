@@ -1,33 +1,36 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
 
-class MainWindow(QMainWindow):
+
+# === ThemeManager ===
+class ThemeManager(QObject):
+    theme_changed = pyqtSignal(str)  # theme switch signal
+
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-
-        # current theme
+        # Set start theme
         self.current_theme = "light"
 
-        # menuBar theme connect
-        self.ui.light.triggered.connect(lambda: self.switch_theme("light"))
-        self.ui.dark.triggered.connect(lambda: self.switch_theme("dark"))
+    def set_theme(self, theme: str):
+        if theme not in ("light", "dark"):
+            return
+        self.current_theme = theme
+        self.theme_changed.emit(theme)
 
-        # apply start theme
-        self.apply_theme(self.current_theme)
+    def get_theme(self) -> str:
+        return self.current_theme
 
-    def get_icon(self, name: str) -> QIcon:
-        """return icon from current theme (as file path)"""
-        path = os.path.join(os.path.dirname(__file__), "resources", "icons", self.current_theme, f"{name}.svg")
-        return QIcon(path)
+    def get_icon_path(self, name: str) -> str:
+        """Return path to icon"""
+        return os.path.join("resources", "icons", self.current_theme, f"{name}.svg")
 
-    def load_stylesheet(self, theme: str) -> str:
-        """load QSS theme file"""
-        path = os.path.join(os.path.dirname(__file__), "themes", f"{theme}.qss")
+    def get_stylesheet(self) -> str:
+        """Load QSS theme file"""
+        path = os.path.join("themes", f"{self.current_theme}.qss")
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read()
@@ -35,37 +38,64 @@ class MainWindow(QMainWindow):
             print(f"Theme file not found: {path}")
             return ""
 
-    def apply_theme(self, theme: str):
-        """Apply theme (icons + stylesheet)"""
-        # save current theme
-        self.current_theme = theme
 
-        # apply QSS
-        self.setStyleSheet(self.load_stylesheet(theme))
+# === ThemedWindow (base class for Window) ===
+class ThemedWindow(QMainWindow):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__()
+        self.theme_manager = theme_manager
+        # Connect to signal about theme switch
+        self.theme_manager.theme_changed.connect(self.on_theme_changed)
 
-        # update icons
+    @pyqtSlot(str)
+    def on_theme_changed(self, theme: str):
+        """Call when theme switched"""
+        self.setStyleSheet(self.theme_manager.get_stylesheet())
+        self.update_icons()
+
+    def update_icons(self):
+        """For children classes"""
+        pass
+
+
+# === MainWindow ===
+class MainWindow(ThemedWindow):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        # Connection menu
+        self.ui.light.triggered.connect(lambda: self.theme_manager.set_theme("light"))
+        self.ui.dark.triggered.connect(lambda: self.theme_manager.set_theme("dark"))
+
+        # Apply start theme 
+        self.on_theme_changed(self.theme_manager.get_theme())
+
+    def update_icons(self):
+        """Update icons when theme switched"""
         if hasattr(self.ui, 'btn_Search'):
-            self.ui.btn_Search.setIcon(self.get_icon("search"))
+            self.ui.btn_Search.setIcon(QIcon(self.theme_manager.get_icon_path("search")))
         if hasattr(self.ui, 'btn_Filt'):
-            self.ui.btn_Filt.setIcon(self.get_icon("filter"))
+            self.ui.btn_Filt.setIcon(QIcon(self.theme_manager.get_icon_path("filter")))
         if hasattr(self.ui, 'btn_Sort'):
-            self.ui.btn_Sort.setIcon(self.get_icon("sort"))
+            self.ui.btn_Sort.setIcon(QIcon(self.theme_manager.get_icon_path("sort")))
         if hasattr(self.ui, 'btn_Report'):
-            self.ui.btn_Report.setIcon(self.get_icon("report"))
+            self.ui.btn_Report.setIcon(QIcon(self.theme_manager.get_icon_path("report")))
         if hasattr(self.ui, 'btn_NewYear'):
-            self.ui.btn_NewYear.setIcon(self.get_icon("new_year"))
+            self.ui.btn_NewYear.setIcon(QIcon(self.theme_manager.get_icon_path("new_year")))
         if hasattr(self.ui, 'btn_Default'):
-            self.ui.btn_Default.setIcon(self.get_icon("refresh"))
-
-    def switch_theme(self, theme: str):
-        """Switch current theme"""
-        if theme not in ("light", "dark"):
-            return
-        self.apply_theme(theme)
+            self.ui.btn_Default.setIcon(QIcon(self.theme_manager.get_icon_path("refresh")))
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainWindow()
+
+    # Create themeManager
+    theme_manager = ThemeManager()
+
+    # Create MainWindow
+    window = MainWindow(theme_manager)
     window.show()
+
     sys.exit(app.exec())
