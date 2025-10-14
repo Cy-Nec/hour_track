@@ -7,3 +7,79 @@ QPushButton {
     border: 1px solid #555;
     padding: 5px;
 }
+
+/*
+* {
+    color: black;
+}
+QMainWindow {
+    background: rgb(252, 245, 228) /*rgb(198, 192, 179);*/
+}
+
+
+QPushButton {
+    background: rgb(228, 220, 200);
+    border: 1px solid rgba(209, 200, 178, 1);
+}
+QPushButton:hover {
+    background: rgb(213, 205, 187)
+}
+QPushButton#btn_Search {
+    background: rgb(228, 220, 200);
+    border: 1px solid rgba(209, 200, 178, 1);
+    border-radius: 4px;
+}
+QPushButton:hover#btn_Search {
+    background: rgb(213, 205, 187)
+}
+
+
+QTabWidget::pane {
+    border: none;
+    background: rgba(255, 255, 255, 50);
+}
+QTabBar::tab {
+    background: rgba(0, 0, 0, 20);
+}
+QTabBar::tab:selected {
+    background: rgba(255, 255, 255, 50);
+}
+QTabBar::tab:hover {
+    background: rgba(255, 255, 255, 90);
+}
+
+
+QGroupBox {
+    border: 1px solid rgba(209, 200, 178, 1);
+    border-radius: 4px;
+    margin-top: 1ex;
+    color: black;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 3px 0 3px;
+    color: black;
+}
+
+
+QLineEdit {
+    background: rgb(228, 220, 200);
+    border-radius: 4px;
+    selection-background-color: rgb(209, 200, 178);
+}
+
+
+QMenuBar {
+    background: rgb(252, 245, 228);
+}
+QMenuBar::item {
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+QMenuBar::item:selected {
+    background: rgb(228, 220, 200);
+}
+*/

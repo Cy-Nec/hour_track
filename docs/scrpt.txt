@@ -2,5 +2,5 @@
 ========
 Command line script to compile .ui to .py
 ========
-pyuic6 -x ui\mainWindow -o ui\mainWindow.py
+pyuic6 -x ui/"mainWindow v0.2.ui" -o ui/mainWindow.py
 pyqt6rc ui/"mainWindow v0.2.ui" -o ui/mainWindow.py
