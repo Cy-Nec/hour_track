@@ -92,7 +92,7 @@ class Ui_MainWindow(object):
         self.line_Search.setObjectName("line_Search")
         self.horizontalLayout_2.addWidget(self.line_Search)
         self.btn_Search = QtWidgets.QPushButton(parent=self.seacrh_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
         sizePolicy.setHeightForWidth(self.btn_Search.sizePolicy().hasHeightForWidth())
@@ -207,7 +207,7 @@ class Ui_MainWindow(object):
         self.menuBar.addAction(self.menu_about.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabW_Slides.setCurrentIndex(1)
+        self.tabW_Slides.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

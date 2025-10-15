@@ -1,9 +1,10 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
+from ui.newYearDialog import Ui_Dialog_NewYear
 
 
 # === ThemeManager ===
@@ -58,6 +59,40 @@ class ThemedWindow(QMainWindow):
         pass
 
 
+# === ThemedDialog (base class for modal window) ===
+class ThemedDialog(QDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__()
+        self.theme_manager = theme_manager
+        # Connect to signal about theme switch
+        self.theme_manager.theme_changed.connect(self.on_theme_changed)
+
+    @pyqtSlot(str)
+    def on_theme_changed(self, theme: str):
+        """Call when theme switched"""
+        self.setStyleSheet(self.theme_manager.get_stylesheet())
+        self.update_icons()
+
+    def update_icons(self):
+        """For children classes"""
+        pass
+
+
+
+# === NewYearDialog ===
+class NewYearDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_NewYear()
+        self.ui.setupUi(self)
+
+        # Delete system border
+        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
+
 # === MainWindow ===
 class MainWindow(ThemedWindow):
     def __init__(self, theme_manager: ThemeManager):
@@ -71,6 +106,10 @@ class MainWindow(ThemedWindow):
 
         # Apply start theme 
         self.on_theme_changed(self.theme_manager.get_theme())
+
+        # Connect button "New_Year"
+        if hasattr(self.ui, 'btn_NewYear'):
+            self.ui.btn_NewYear.clicked.connect(self.open_new_year_dialog)
 
     def update_icons(self):
         """Update icons when theme switched"""
@@ -86,6 +125,10 @@ class MainWindow(ThemedWindow):
             self.ui.btn_NewYear.setIcon(QIcon(self.theme_manager.get_icon_path("new_year")))
         if hasattr(self.ui, 'btn_Default'):
             self.ui.btn_Default.setIcon(QIcon(self.theme_manager.get_icon_path("refresh")))
+    
+    def open_new_year_dialog(self):
+        dialog = NewYearDialog(self.theme_manager)
+        dialog.exec()
 
 
 if __name__ == '__main__':

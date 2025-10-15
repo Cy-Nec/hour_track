@@ -4,6 +4,9 @@
 QMainWindow {
     background: rgb(252, 245, 228);
 }
+QDialog {
+    background: rgb(252, 245, 228);
+}
 
 QPushButton {
     background: rgb(228, 220, 200);
