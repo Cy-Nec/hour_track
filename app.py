@@ -78,7 +78,6 @@ class ThemedDialog(QDialog):
         pass
 
 
-
 # === NewYearDialog ===
 class NewYearDialog(ThemedDialog):
     def __init__(self, theme_manager: ThemeManager):
