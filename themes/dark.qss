@@ -1,10 +1,11 @@
+/*
+MainWindow
+*/
+
 * {
     color: white;
 }
 QMainWindow {
-    background: rgb(33, 33, 33);
-}
-QDialog {
     background: rgb(33, 33, 33);
 }
 
@@ -83,5 +84,22 @@ QMenu::item:selected {
 }
 
 QTableView {
+    background: rgb(38, 38, 38);
+}
+
+
+/*
+Dialog windows
+*/
+QDialog {
+    background: rgb(33, 33, 33);
+}
+QTreeWidget {
+    background: rgb(38, 38, 38);
+}
+QHeaderView::section {
+    background-color: rgba(61, 59, 55, 1);
+}
+QListWidget {
     background: rgb(38, 38, 38);
 }

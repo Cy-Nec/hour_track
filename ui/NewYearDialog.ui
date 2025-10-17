@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>319</width>
+    <width>334</width>
     <height>501</height>
    </rect>
   </property>
@@ -31,6 +31,11 @@
    </property>
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -40,7 +45,18 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0">
-        <widget class="QTableView" name="tableView"/>
+        <widget class="QTreeWidget" name="treeW_firstHalf">
+         <column>
+          <property name="text">
+           <string>Группа</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Количество часов</string>
+          </property>
+         </column>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -50,14 +66,25 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
-        <widget class="QTableView" name="tableView_2"/>
+        <widget class="QTreeWidget" name="treeW_SecondHalf">
+         <column>
+          <property name="text">
+           <string>Группа</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Количество часов</string>
+          </property>
+         </column>
+        </widget>
        </item>
       </layout>
      </widget>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="btn_loadFile">
@@ -78,7 +105,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btn_Abort">
+       <widget class="QPushButton" name="btn_Cancel">
         <property name="minimumSize">
          <size>
           <width>100</width>
@@ -91,7 +118,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Отмена</string>
+         <string>Отменить</string>
         </property>
        </widget>
       </item>

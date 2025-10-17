@@ -2,4 +2,7 @@
 ========
 Command line script to compile .ui to .py
 ========
-pyuic6 -x ui/"mainWindow v0.2.ui" -o ui/mainWindow.py
+pyuic6 -x ui/"mainWindow.ui" -o ui/mainWindow.py
+
+# PowerShell command to compile all files
+Get-ChildItem -Path "ui/*.ui" | ForEach-Object { pyuic6 -x $_.FullName -o "ui/$($_.BaseName).py" }

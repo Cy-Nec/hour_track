@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>898</width>
-    <height>521</height>
+    <height>527</height>
    </rect>
   </property>
   <property name="font">
@@ -27,16 +27,16 @@
    </property>
    <layout class="QGridLayout" name="gridLayout_3" rowstretch="1,0,0,0,0,11,0" columnstretch="9,3,0">
     <property name="leftMargin">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="topMargin">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="rightMargin">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="bottomMargin">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="spacing">
      <number>0</number>
@@ -130,6 +130,7 @@
       <property name="font">
        <font>
         <pointsize>12</pointsize>
+        <italic>false</italic>
        </font>
       </property>
       <property name="styleSheet">
@@ -147,7 +148,7 @@
       <property name="checkable">
        <bool>false</bool>
       </property>
-      <widget class="QRadioButton" name="radioBtn_First">
+      <widget class="QRadioButton" name="rBtn_First">
        <property name="geometry">
         <rect>
          <x>11</x>
@@ -168,7 +169,7 @@
         <bool>true</bool>
        </property>
       </widget>
-      <widget class="QRadioButton" name="radioBtn_Second">
+      <widget class="QRadioButton" name="rBtn_Second">
        <property name="geometry">
         <rect>
          <x>11</x>
@@ -468,9 +469,9 @@
     <property name="title">
      <string>Файл</string>
     </property>
-    <addaction name="action_3"/>
+    <addaction name="open"/>
     <addaction name="separator"/>
-    <addaction name="action_4"/>
+    <addaction name="report"/>
    </widget>
    <widget class="QMenu" name="menu_theme">
     <property name="title">
@@ -483,6 +484,7 @@
     <property name="title">
      <string>Справка</string>
     </property>
+    <addaction name="about"/>
    </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_theme"/>
@@ -498,20 +500,22 @@
     <string>Тёмная</string>
    </property>
   </action>
-  <action name="action_3">
+  <action name="open">
    <property name="text">
     <string>Открыть</string>
    </property>
   </action>
-  <action name="action_4">
+  <action name="report">
    <property name="text">
     <string>Печать</string>
    </property>
   </action>
+  <action name="about">
+   <property name="text">
+    <string>О программе</string>
+   </property>
+  </action>
  </widget>
- <resources>
-  <include location="../resources.qrc"/>
-  <include location="resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

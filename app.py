@@ -5,6 +5,9 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
+from ui.filterDialog import Ui_Dialog_Filter
+from ui.sortDialog import Ui_Dialog_Sort
+from ui.about import Ui_about
 
 
 # === ThemeManager ===
@@ -92,16 +95,50 @@ class NewYearDialog(ThemedDialog):
         self.on_theme_changed(self.theme_manager.get_theme())
 
 
+# === FilterDialog ===
+class FilterDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_Filter()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+    
+
+# === SortDialog ===
+class SortDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_Sort()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
+
+# === about ===
+class AboutWindow(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_about()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
+
 # === MainWindow ===
 class MainWindow(ThemedWindow):
     def __init__(self, theme_manager: ThemeManager):
         super().__init__(theme_manager)
         self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self)   
 
         # Connection menu
         self.ui.light.triggered.connect(lambda: self.theme_manager.set_theme("light"))
         self.ui.dark.triggered.connect(lambda: self.theme_manager.set_theme("dark"))
+        self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
 
         # Apply start theme 
         self.on_theme_changed(self.theme_manager.get_theme())
@@ -109,7 +146,13 @@ class MainWindow(ThemedWindow):
         # Connect button "New_Year"
         if hasattr(self.ui, 'btn_NewYear'):
             self.ui.btn_NewYear.clicked.connect(self.open_new_year_dialog)
-
+        # Connect button "Filter"
+        if hasattr(self.ui, 'btn_Filt'):
+            self.ui.btn_Filt.clicked.connect(self.open_filter_dialog)
+        # Connect button "Sort"
+        if hasattr(self.ui, 'btn_Sort'):
+            self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
+     
     def update_icons(self):
         """Update icons when theme switched"""
         if hasattr(self.ui, 'btn_Search'):
@@ -127,6 +170,18 @@ class MainWindow(ThemedWindow):
     
     def open_new_year_dialog(self):
         dialog = NewYearDialog(self.theme_manager)
+        dialog.exec()
+    
+    def open_filter_dialog(self):
+        dialog = FilterDialog(self.theme_manager)
+        dialog.exec()
+
+    def open_sort_dialog(self):
+        dialog = SortDialog(self.theme_manager)
+        dialog.exec()
+            
+    def open_aboutWindow(self):
+        dialog = AboutWindow(self.theme_manager)
         dialog.exec()
 
 
