@@ -8,6 +8,7 @@ from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
 from ui.sortDialog import Ui_Dialog_Sort
 from ui.about import Ui_about
+from calendar_helper import setup_calendar_tables
 
 
 # === ThemeManager ===
@@ -142,6 +143,8 @@ class MainWindow(ThemedWindow):
 
         # Apply start theme 
         self.on_theme_changed(self.theme_manager.get_theme())
+
+        setup_calendar_tables(self.ui, year=2025)
 
         # Connect button "New_Year"
         if hasattr(self.ui, 'btn_NewYear'):

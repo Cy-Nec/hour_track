@@ -262,7 +262,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -270,53 +270,81 @@
       <property name="documentMode">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="tab">
+      <widget class="QWidget" name="tab_September">
        <attribute name="title">
         <string>Сент</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
         <property name="leftMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="topMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="rightMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="bottomMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="spacing">
-         <number>3</number>
+         <number>6</number>
         </property>
         <item row="0" column="0">
-         <widget class="QTableView" name="tableView_2"/>
+         <widget class="QTableView" name="tableV_hours_1"/>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="tab_October">
        <attribute name="title">
         <string>Окт</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout" rowstretch="0">
         <property name="leftMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="topMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="rightMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="bottomMargin">
-         <number>3</number>
+         <number>9</number>
         </property>
         <property name="spacing">
-         <number>3</number>
+         <number>6</number>
         </property>
         <item row="0" column="0">
-         <widget class="QTableView" name="tableV_hours">
+         <widget class="QTableView" name="tableV_hours_4">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_November">
+       <attribute name="title">
+        <string>Нояб</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QTableView" name="tableV_hours_2">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_December">
+       <attribute name="title">
+        <string>Декаб</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QTableView" name="tableV_hours_3">
           <property name="styleSheet">
            <string notr="true"/>
           </property>
