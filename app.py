@@ -10,6 +10,7 @@ from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
 from ui.sortDialog import Ui_Dialog_Sort
 from ui.about import Ui_about
+from ui.reportDialog import Ui_Dialog_Report
 from calendar_helper import setup_calendar_tables_for_half
 
 
@@ -260,6 +261,15 @@ class AboutWindow(ThemedDialog):
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
 
+class ReportDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_Report()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
 
 # === MainWindow ===
 class MainWindow(ThemedWindow):
@@ -310,11 +320,13 @@ class MainWindow(ThemedWindow):
         # Connect button "Sort"
         if hasattr(self.ui, 'btn_Sort'):
             self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
+        # Connect button "Report"
+        if hasattr(self.ui, 'btn_Report'):
+            self.ui.btn_Report.clicked.connect(self.open_report_dialog)
 
         for i in range(self.ui.tabW_SlidesFirstHalf.count()):
             table_view = self.ui.tabW_SlidesFirstHalf.widget(i).findChild(QtWidgets.QTableView)
             if table_view:
-                # Скрываем вертикальный заголовок (номера строк)
                 table_view.verticalHeader().setVisible(False)
 
     @pyqtSlot()
@@ -350,6 +362,10 @@ class MainWindow(ThemedWindow):
 
     def open_sort_dialog(self):
         dialog = SortDialog(self.theme_manager)
+        dialog.exec()
+        
+    def open_report_dialog(self):
+        dialog = ReportDialog(self.theme_manager)
         dialog.exec()
             
     def open_aboutWindow(self):
