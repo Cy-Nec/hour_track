@@ -25,7 +25,7 @@
    <property name="layoutDirection">
     <enum>Qt::LeftToRight</enum>
    </property>
-   <layout class="QGridLayout" name="gridLayout_3" rowstretch="1,0,0,0,0,11,0" columnstretch="9,3,0">
+   <layout class="QGridLayout" name="gridLayout_3" rowstretch="1,0,0,0,0,1,0" columnstretch="9,0,0">
     <property name="leftMargin">
      <number>3</number>
     </property>
@@ -41,217 +41,24 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="6" column="1" colspan="2">
-     <widget class="QFrame" name="control_frame">
-      <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
-       </property>
-       <item>
-        <widget class="QPushButton" name="btn_NewYear">
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="baseSize">
-          <size>
-           <width>150</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Начать новый год</string>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btn_Report">
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="baseSize">
-          <size>
-           <width>150</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Отчёты</string>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="1" column="1" colspan="2">
-     <widget class="QGroupBox" name="groupB_radioBtns">
-      <property name="minimumSize">
+    <item row="0" column="2">
+     <spacer name="verticalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Fixed</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
        <size>
-        <width>150</width>
-        <height>80</height>
+        <width>20</width>
+        <height>12</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>150</width>
-        <height>80</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-        <italic>false</italic>
-       </font>
-      </property>
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
-      <property name="title">
-       <string>Полугодие</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignHCenter|Qt::AlignTop</set>
-      </property>
-      <property name="flat">
-       <bool>false</bool>
-      </property>
-      <property name="checkable">
-       <bool>false</bool>
-      </property>
-      <widget class="QRadioButton" name="rBtn_First">
-       <property name="geometry">
-        <rect>
-         <x>11</x>
-         <y>21</y>
-         <width>76</width>
-         <height>23</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>12</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Первое</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QRadioButton" name="rBtn_Second">
-       <property name="geometry">
-        <rect>
-         <x>11</x>
-         <y>50</y>
-         <width>75</width>
-         <height>23</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>12</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Второе</string>
-       </property>
-      </widget>
-     </widget>
-    </item>
-    <item row="2" column="1" colspan="2">
-     <widget class="QFrame" name="search_frame">
-      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,1">
-       <property name="spacing">
-        <number>2</number>
-       </property>
-       <item>
-        <widget class="QLineEdit" name="line_Search">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btn_Search">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>1</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>30</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
+     </spacer>
     </item>
     <item row="0" column="0" rowspan="7">
-     <widget class="QTabWidget" name="tabW_Slides">
+     <widget class="QTabWidget" name="tabW_SlidesFirstHalf">
       <property name="minimumSize">
        <size>
         <width>500</width>
@@ -262,7 +69,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>5</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -352,6 +159,26 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>Май</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="QTableView" name="tableV_hours_5"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>Июнь</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="0" column="0">
+         <widget class="QTableView" name="tableV_hours_6"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
     <item row="5" column="1">
@@ -397,21 +224,77 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
-     <spacer name="verticalSpacer_2">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeType">
-       <enum>QSizePolicy::Fixed</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>12</height>
-       </size>
-      </property>
-     </spacer>
+    <item row="6" column="1" colspan="2">
+     <widget class="QFrame" name="control_frame">
+      <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <item>
+        <widget class="QPushButton" name="btn_NewYear">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>150</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Создать/Редактировать запись</string>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_Report">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>150</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Отчёт</string>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
     <item row="3" column="1" colspan="2">
      <widget class="QFrame" name="filt_sort_frame">
@@ -482,6 +365,143 @@
       </layout>
      </widget>
     </item>
+    <item row="2" column="1" colspan="2">
+     <widget class="QFrame" name="search_frame">
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,1">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <item>
+        <widget class="QLineEdit" name="line_Search">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_Search">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>30</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="1" colspan="2">
+     <widget class="QGroupBox" name="groupB_radioBtns">
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>80</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>80</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+        <italic>false</italic>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="title">
+       <string>Полугодие</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignHCenter|Qt::AlignTop</set>
+      </property>
+      <property name="flat">
+       <bool>false</bool>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <widget class="QRadioButton" name="rBtn_First">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>21</y>
+         <width>76</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Первое</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="rBtn_Second">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>50</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Второе</string>
+       </property>
+      </widget>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -507,6 +527,7 @@
     </property>
     <addaction name="light"/>
     <addaction name="dark"/>
+    <addaction name="blue"/>
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
@@ -541,6 +562,11 @@
   <action name="about">
    <property name="text">
     <string>О программе</string>
+   </property>
+  </action>
+  <action name="blue">
+   <property name="text">
+    <string>Синяя</string>
    </property>
   </action>
  </widget>

@@ -1,14 +1,17 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu
 from PyQt6.QtGui import QIcon
+from PyQt6 import QtWidgets
+from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
 from ui.sortDialog import Ui_Dialog_Sort
 from ui.about import Ui_about
-from calendar_helper import setup_calendar_tables
+from ui.reportDialog import Ui_Dialog_Report
+from calendar_helper import setup_calendar_tables_for_half
 
 
 # === ThemeManager ===
@@ -21,7 +24,7 @@ class ThemeManager(QObject):
         self.current_theme = "light"
 
     def set_theme(self, theme: str):
-        if theme not in ("light", "dark"):
+        if theme not in ("light", "dark", "blue"):
             return
         self.current_theme = theme
         self.theme_changed.emit(theme)
@@ -89,11 +92,141 @@ class NewYearDialog(ThemedDialog):
         self.ui = Ui_Dialog_NewYear()
         self.ui.setupUi(self)
 
-        # Delete system border
-        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setup_tree_widgets()
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
+
+        # Add empty row to initialization 
+        self.add_empty_group(self.ui.treeW_firstHalf)
+        self.add_empty_group(self.ui.treeW_SecondHalf)
+
+
+    def setup_tree_widgets(self):
+        """ Setup QTreeWidget."""
+        tree_widgets = [self.ui.treeW_firstHalf, self.ui.treeW_SecondHalf]
+        for tree_widget in tree_widgets:
+            tree_widget.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked | QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed)
+            tree_widget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+            # Connect signal to context menu
+            tree_widget.customContextMenuRequested.connect(lambda pos, tw=tree_widget: self.open_context_menu(pos, tw))
+            
+            tree_widget.itemChanged.connect(self.on_item_changed)
+
+
+    def add_empty_group(self, tree_widget, parent_item=None):
+        """Добавляет одну пустую строку (группу или предмет) в дерево."""
+        if parent_item:
+            # add subject row
+            new_item = QTreeWidgetItem(parent_item)
+        else:
+            # add group row
+            new_item = QTreeWidgetItem(tree_widget)
+
+        new_item.setFlags(new_item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
+        new_item.setText(0, "") # empty row for title
+        new_item.setText(1, "") # empty row for hours
+        return new_item
+
+
+    def on_item_changed(self, item, column):
+        """
+        Обработчик сигнала itemChanged.
+        Вызывается, когда пользователь изменяет текст в элементе.
+        """
+        tree_widget = item.treeWidget()
+        if column == 0 and item.text(0).strip(): 
+            parent = item.parent()
+            if parent:
+                if parent.indexOfChild(item) == parent.childCount() - 1:
+                    self.add_empty_subject(tree_widget, parent)
+            else:
+                if tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1:
+                    self.add_empty_group(tree_widget)
+
+
+    def add_empty_subject(self, tree_widget, parent_item):
+        """Добавляет один пустой дочерний элемент (предмет) к родительскому элементу (группе)."""
+        new_item = self.add_empty_group(tree_widget, parent_item)
+        tree_widget.expandItem(parent_item)
+        return new_item
+
+
+    def open_context_menu(self, position, tree_widget):
+        """Открывает контекстное меню для QTreeWidget."""
+        menu = QMenu(tree_widget)
+        add_group_action = menu.addAction("Добавить группу")
+        add_subject_action = menu.addAction("Добавить предмет")
+        delete_action = menu.addAction("Удалить")
+
+        item = tree_widget.itemAt(position)
+        if item:
+            parent_item = item.parent()
+            if parent_item:
+                 add_group_action.setEnabled(False) 
+                 add_subject_action.setEnabled(False)
+            else:
+                 add_group_action.setEnabled(False) 
+
+            is_last_empty_top_level = (
+                tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1
+                and not item.text(0) and not item.text(1)
+                and item.parent() is None 
+            )
+            if is_last_empty_top_level:
+                 delete_action.setEnabled(False)
+            else:
+                delete_action.triggered.connect(lambda: self.delete_item(tree_widget, item))
+
+            if parent_item is None:
+                add_subject_action.triggered.connect(lambda: self.add_subject_context(tree_widget, item))
+            else:
+                add_subject_action.setEnabled(False)
+
+        else:
+            delete_action.setEnabled(False)
+            add_subject_action.setEnabled(False)
+
+        add_group_action.triggered.connect(lambda: self.add_group_context(tree_widget))
+
+        def start_edit_on_action(action, add_func, *args):
+            def handler():
+                new_item = add_func(tree_widget, *args) if args else add_func(tree_widget)
+                tree_widget.editItem(new_item, 0)
+            action.triggered.connect(handler)
+
+        menu.exec(tree_widget.mapToGlobal(position))
+
+    def add_group_context(self, tree_widget):
+        """Добавляет новую группу через контекстное меню."""
+        new_item = self.add_empty_group(tree_widget)
+        tree_widget.editItem(new_item, 0)
+
+    def add_subject_context(self, tree_widget, parent_item):
+        """Добавляет новый предмет через контекстное меню."""
+        new_item = self.add_empty_subject(tree_widget, parent_item)
+        tree_widget.editItem(new_item, 0)
+
+
+    def delete_item(self, tree_widget, item):
+        """Удаляет выбранный элемент."""
+        is_last_empty_top_level = (
+            tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1
+            and not item.text(0) and not item.text(1)
+            and item.parent() is None
+        )
+        if is_last_empty_top_level:
+             return
+
+        parent = item.parent()
+        if parent:
+            parent.removeChild(item)
+        else:
+            index = tree_widget.indexOfTopLevelItem(item)
+            if index >= 0:
+                tree_widget.takeTopLevelItem(index)
+                if tree_widget.topLevelItemCount() == 0:
+                     self.add_empty_group(tree_widget)
 
 
 # === FilterDialog ===
@@ -128,6 +261,15 @@ class AboutWindow(ThemedDialog):
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
 
+class ReportDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_Report()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
 
 # === MainWindow ===
 class MainWindow(ThemedWindow):
@@ -136,15 +278,38 @@ class MainWindow(ThemedWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)   
 
+        # "Первое" полугодие = Сент–Дек (4 месяца)
+        self.first_half = [
+            (9, "Сент"),
+            (10, "Окт"),
+            (11, "Нояб"),
+            (12, "Декаб")
+        ]
+        # "Второе" полугодие = Янв–Июнь (6 месяцев)
+        self.second_half = [
+            (1, "Янв"),
+            (2, "Фев"),
+            (3, "Март"),
+            (4, "Апр"),
+            (5, "Май"),
+            (6, "Июнь")
+        ]
+
+        # Подключаем радиокнопки
+        self.ui.rBtn_First.toggled.connect(self.on_half_changed)
+        self.ui.rBtn_Second.toggled.connect(self.on_half_changed)
+
+        # Инициализируем начальное состояние — "Первое" полугодие активно
+        self.on_half_changed()
+
         # Connection menu
         self.ui.light.triggered.connect(lambda: self.theme_manager.set_theme("light"))
         self.ui.dark.triggered.connect(lambda: self.theme_manager.set_theme("dark"))
+        self.ui.blue.triggered.connect(lambda: self.theme_manager.set_theme("blue"))
         self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
 
         # Apply start theme 
         self.on_theme_changed(self.theme_manager.get_theme())
-
-        setup_calendar_tables(self.ui, year=2025)
 
         # Connect button "New_Year"
         if hasattr(self.ui, 'btn_NewYear'):
@@ -155,6 +320,22 @@ class MainWindow(ThemedWindow):
         # Connect button "Sort"
         if hasattr(self.ui, 'btn_Sort'):
             self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
+        # Connect button "Report"
+        if hasattr(self.ui, 'btn_Report'):
+            self.ui.btn_Report.clicked.connect(self.open_report_dialog)
+
+        for i in range(self.ui.tabW_SlidesFirstHalf.count()):
+            table_view = self.ui.tabW_SlidesFirstHalf.widget(i).findChild(QtWidgets.QTableView)
+            if table_view:
+                table_view.verticalHeader().setVisible(False)
+
+    @pyqtSlot()
+    def on_half_changed(self):
+        """Общий обработчик изменения полугодия"""
+        if self.ui.rBtn_First.isChecked():
+            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.first_half)
+        elif self.ui.rBtn_Second.isChecked():
+            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.second_half)
      
     def update_icons(self):
         """Update icons when theme switched"""
@@ -181,6 +362,10 @@ class MainWindow(ThemedWindow):
 
     def open_sort_dialog(self):
         dialog = SortDialog(self.theme_manager)
+        dialog.exec()
+        
+    def open_report_dialog(self):
+        dialog = ReportDialog(self.theme_manager)
         dialog.exec()
             
     def open_aboutWindow(self):
