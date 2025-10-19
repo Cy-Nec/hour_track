@@ -1,5 +1,7 @@
 import calendar
 from PyQt6.QtCore import QAbstractTableModel, Qt
+from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QHeaderView
 from datetime import date
 
 
@@ -99,33 +101,37 @@ class CalendarTableModel(QAbstractTableModel):
         return None
 
 
-def setup_calendar_tables(ui, year: int = 2025):
-    """
-    Заполняет QTableView на вкладках датами месяцев, распределёнными по строке, начиная с 3-й колонки, исключая воскресенья
-    """
-    months = [
-        (9, "Сент"),   # сентябрь
-        (10, "Окт"),   # октябрь
-        (11, "Нояб"),  # ноябрь
-        (12, "Декаб")  # декабрь
-    ]
+def setup_calendar_tables_for_half(ui, year: int, months_data: list):
+    tab_widget = ui.tabW_SlidesFirstHalf
 
-    tables = [
-        ui.tableV_hours_1,  # Сент
-        ui.tableV_hours_4,  # Окт
-        ui.tableV_hours_2,  # Нояб
-        ui.tableV_hours_3   # Декаб
-    ]
+    for i in range(tab_widget.count()):
+        tab_widget.setTabVisible(i, False)
 
-    for i, (month, label) in enumerate(months):
+    for i, (month, label) in enumerate(months_data):
+        if i >= tab_widget.count():
+            continue
+
         model = CalendarTableModel(year, month)
-        tables[i].setModel(model)
+        table_view = tab_widget.widget(i).findChild(QtWidgets.QTableView)
+        if table_view:
+            model.set_table_view(table_view)
+            table_view.setModel(model)
 
-        # Привязываем таблицу к модели, чтобы вызывать resize
-        model.set_table_view(tables[i])
+            # Фиксированная ширина
+            header = table_view.horizontalHeader()
+            header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
 
-        # Подстраиваем ширину колонок под содержимое
-        tables[i].resizeColumnsToContents()
+            col_count = model.columnCount()
+            for col in range(col_count):
+                if col < 2:
+                    table_view.setColumnWidth(col, 100)
+                else:
+                    header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
 
-        # Обновляем название вкладки, если нужно
-        ui.tabW_Slides.setTabText(i, label)
+        tab_widget.setTabText(i, label)
+        tab_widget.setTabVisible(i, True)
+
+    for i in range(tab_widget.count()):
+        if tab_widget.isTabVisible(i):
+            tab_widget.setCurrentIndex(i)
+            break

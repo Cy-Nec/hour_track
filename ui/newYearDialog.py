@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_Dialog_NewYear(object):
     def setupUi(self, Dialog_NewYear):
         Dialog_NewYear.setObjectName("Dialog_NewYear")
-        Dialog_NewYear.resize(334, 501)
+        Dialog_NewYear.resize(384, 501)
         self.gridLayout_3 = QtWidgets.QGridLayout(Dialog_NewYear)
         self.gridLayout_3.setContentsMargins(2, 2, 2, 2)
         self.gridLayout_3.setSpacing(2)
@@ -58,7 +58,7 @@ class Ui_Dialog_NewYear(object):
         self.btn_Cancel.setObjectName("btn_Cancel")
         self.horizontalLayout.addWidget(self.btn_Cancel)
         self.btn_Accept = QtWidgets.QPushButton(parent=self.frame)
-        self.btn_Accept.setMinimumSize(QtCore.QSize(100, 0))
+        self.btn_Accept.setMinimumSize(QtCore.QSize(150, 0))
         font = QtGui.QFont()
         font.setPointSize(11)
         self.btn_Accept.setFont(font)
@@ -81,7 +81,7 @@ class Ui_Dialog_NewYear(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_SecondHalf), _translate("Dialog_NewYear", "Второе полугодие"))
         self.btn_loadFile.setText(_translate("Dialog_NewYear", "Загрузить "))
         self.btn_Cancel.setText(_translate("Dialog_NewYear", "Отменить"))
-        self.btn_Accept.setText(_translate("Dialog_NewYear", "Создать"))
+        self.btn_Accept.setText(_translate("Dialog_NewYear", "Создать/Изменить"))
 
 
 if __name__ == "__main__":

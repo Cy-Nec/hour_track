@@ -2,13 +2,14 @@ import sys
 import os
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog
 from PyQt6.QtGui import QIcon
+from PyQt6 import QtWidgets
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
 from ui.sortDialog import Ui_Dialog_Sort
 from ui.about import Ui_about
-from calendar_helper import setup_calendar_tables
+from calendar_helper import setup_calendar_tables_for_half
 
 
 # === ThemeManager ===
@@ -21,7 +22,7 @@ class ThemeManager(QObject):
         self.current_theme = "light"
 
     def set_theme(self, theme: str):
-        if theme not in ("light", "dark"):
+        if theme not in ("light", "dark", "blue"):
             return
         self.current_theme = theme
         self.theme_changed.emit(theme)
@@ -136,15 +137,38 @@ class MainWindow(ThemedWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)   
 
+        # "Первое" полугодие = Сент–Дек (4 месяца)
+        self.first_half = [
+            (9, "Сент"),
+            (10, "Окт"),
+            (11, "Нояб"),
+            (12, "Декаб")
+        ]
+        # "Второе" полугодие = Янв–Июнь (6 месяцев)
+        self.second_half = [
+            (1, "Янв"),
+            (2, "Фев"),
+            (3, "Март"),
+            (4, "Апр"),
+            (5, "Май"),
+            (6, "Июнь")
+        ]
+
+        # Подключаем радиокнопки
+        self.ui.rBtn_First.toggled.connect(self.on_half_changed)
+        self.ui.rBtn_Second.toggled.connect(self.on_half_changed)
+
+        # Инициализируем начальное состояние — "Первое" полугодие активно
+        self.on_half_changed()
+
         # Connection menu
         self.ui.light.triggered.connect(lambda: self.theme_manager.set_theme("light"))
         self.ui.dark.triggered.connect(lambda: self.theme_manager.set_theme("dark"))
+        self.ui.blue.triggered.connect(lambda: self.theme_manager.set_theme("blue"))
         self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
 
         # Apply start theme 
         self.on_theme_changed(self.theme_manager.get_theme())
-
-        setup_calendar_tables(self.ui, year=2025)
 
         # Connect button "New_Year"
         if hasattr(self.ui, 'btn_NewYear'):
@@ -155,6 +179,20 @@ class MainWindow(ThemedWindow):
         # Connect button "Sort"
         if hasattr(self.ui, 'btn_Sort'):
             self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
+
+        for i in range(self.ui.tabW_SlidesFirstHalf.count()):
+            table_view = self.ui.tabW_SlidesFirstHalf.widget(i).findChild(QtWidgets.QTableView)
+            if table_view:
+                # Скрываем вертикальный заголовок (номера строк)
+                table_view.verticalHeader().setVisible(False)
+
+    @pyqtSlot()
+    def on_half_changed(self):
+        """Общий обработчик изменения полугодия"""
+        if self.ui.rBtn_First.isChecked():
+            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.first_half)
+        elif self.ui.rBtn_Second.isChecked():
+            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.second_half)
      
     def update_icons(self):
         """Update icons when theme switched"""

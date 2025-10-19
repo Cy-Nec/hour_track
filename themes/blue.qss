@@ -1,0 +1,167 @@
+/*
+MainWindow — Синяя тема
+*/
+
+* {
+    color: white; /* Глобально устанавливаем белый цвет текста */
+}
+
+QMainWindow {
+    background: rgb(18, 25, 33); /* Тёмно-синий фон */
+}
+
+QPushButton {
+    background: rgb(40, 60, 85); /* Тёмно-синяя кнопка */
+    border: 1px solid rgb(100, 140, 190);
+}
+QPushButton:hover {
+    background: rgb(50, 75, 110);
+}
+QPushButton#btn_Search {
+    background: rgb(40, 60, 85);
+    border: 1px solid rgb(100, 140, 190);
+    border-radius: 4px;
+}
+QPushButton:hover#btn_Search {
+    background: rgb(50, 75, 110);
+}
+
+QTabWidget::pane {
+    border: none;
+    background: rgba(30, 45, 65, 180); /* Тёмно-синий фон вкладок */
+}
+QTabBar::tab {
+    background: rgba(20, 35, 50, 180); /* Тёмно-синий цвет вкладки */
+    font-size: 14px;
+}
+QTabBar::tab:selected {
+    background: rgba(60, 100, 160, 200); /* Более яркий синий для активной вкладки */
+}
+QTabBar::tab:hover {
+    background: rgba(80, 120, 180, 200); /* Ещё ярче при наведении */
+}
+
+/* Таблица */
+QTableView {
+    background: rgb(22, 32, 42); /* Тёмно-синий фон таблицы */
+    border: none;
+    /* color: white; <-- НЕ НУЖНО, наследуется от * */
+    selection-background-color: rgba(60, 100, 160, 180); /* Синий при выделении */
+}
+
+QTableView::item {
+    padding: 4px; /* Сохраняем отступы */
+    min-height: 28px; /* Сохраняем высоту */
+    border: none;
+    background: rgb(22, 32, 42); /* Тёмно-синий фон ячейки */
+}
+/* Заголовок столбцов */
+QHeaderView::section {
+    background-color: rgba(30, 50, 75, 220); /* Синий заголовок */
+    padding: 4px 8px; /* Сохраняем отступы */
+    min-height: 20px; /* Сохраняем высоту */
+    font-size: 14px;
+}
+
+/* Скрываем вертикальный заголовок (номера строк) — должен скрываться кодом */
+QTableView::verticalHeader {
+    width: 0px;
+    border: none;
+    background: transparent;
+}
+
+/* Прокрутка */
+QScrollBar:horizontal {
+    background: rgb(22, 32, 42);
+    height: 16px;
+    border: none;
+}
+QScrollBar::handle:horizontal {
+    background: rgba(80, 120, 180, 200); /* Синий ползунок */
+    min-width: 20px;
+    border-radius: 8px;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+QScrollBar:vertical {
+    background: rgb(22, 32, 42);
+    width: 16px;
+    border: none;
+}
+QScrollBar::handle:vertical {
+    background: rgba(80, 120, 180, 200); /* Синий ползунок */
+    min-height: 20px;
+    border-radius: 8px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* Группы */
+QGroupBox {
+    border: 1px solid rgb(100, 140, 190); /* Синяя рамка */
+    border-radius: 4px;
+    margin-top: 1ex;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 3px 0 3px;
+}
+
+/* Поля ввода */
+QLineEdit {
+    background: rgb(40, 60, 85); /* Тот же цвет, что и кнопки */
+    border-radius: 4px;
+    selection-background-color: rgba(80, 120, 180, 200); /* Синий при выделении */
+}
+
+/* Меню */
+QMenuBar {
+    background-color: rgb(25, 38, 52); /* Тёмно-синий фон меню */
+}
+QMenuBar::item {
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+QMenuBar::item:selected {
+    background: rgba(60, 100, 160, 180); /* Синий при наведении */
+}
+QMenu {
+    background: rgb(25, 38, 52); /* Тёмно-синий фон подменю */
+}
+QMenu::item {
+    padding: 4px 20px;
+    background: transparent;
+}
+QMenu::item:selected {
+    background: rgba(60, 100, 160, 180); /* Синий при наведении */
+}
+
+/*
+Dialog windows
+*/
+QDialog {
+    background: rgb(18, 25, 33); /* Тот же тёмно-синий */
+}
+QTreeWidget {
+    background: rgb(22, 32, 42); /* Тот же тёмно-синий */
+}
+QHeaderView::section {
+    background-color: rgba(30, 50, 75, 220); /* Тот же синий */
+    /* color: white; <-- НЕ НУЖНО, наследуется от * */
+}
+QListWidget {
+    background: rgb(22, 32, 42); /* Тот же тёмно-синий */
+    /* color: white; <-- НЕ НУЖНО, наследуется от * */
+}

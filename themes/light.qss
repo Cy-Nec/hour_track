@@ -1,101 +1,177 @@
 /*
-MainWindow
+MainWindow — Светлая тема
 */
+
+/* === ГЛОБАЛЬНЫЕ СТИЛИ === */
 * {
-    color: black;
-}
-QMainWindow {
-    background: rgb(252, 245, 228);
+    color: black; /* Устанавливаем чёрный цвет текста по умолчанию */
 }
 
+QMainWindow {
+    background: rgb(252, 245, 228); /* Светло-бежевый фон основного окна */
+}
+
+/* === КНОПКИ === */
 QPushButton {
-    background: rgb(228, 220, 200);
-    border: 1px solid rgba(209, 200, 178, 1);
+    background: rgb(228, 220, 200); /* Светло-коричневый фон кнопки */
+    border: 1px solid rgba(209, 200, 178, 1); /* Светло-коричневая рамка */
 }
 QPushButton:hover {
-    background: rgb(213, 205, 187);
+    background: rgb(213, 205, 187); /* Более тёмный фон при наведении */
 }
+/* Конкретная кнопка поиска */
 QPushButton#btn_Search {
-    background: rgb(228, 220, 200);
-    border: 1px solid rgba(209, 200, 178, 1);
-    border-radius: 4px;
-}
-QPushButton:hover#btn_Search {
-    background: rgb(213, 205, 187);
+    border-radius: 4px; /* Скруглённые углы */
 }
 
+/* === ВКЛАДКИ === */
 QTabWidget::pane {
-    border: none;
-    background: rgba(255, 255, 255, 50);
+    border: none; /* Убираем рамку */
+    background: rgba(255, 255, 255, 50); /* Лёгкий полупрозрачный фон */
 }
 QTabBar::tab {
-    background: rgba(0, 0, 0, 20);
-    font-size: 14px;
+    background: rgba(0, 0, 0, 20); /* Лёгкий тёмный фон вкладки */
+    font-size: 14px; /* Размер шрифта */
 }
 QTabBar::tab:selected {
-    background: rgba(255, 255, 255, 50);
+    background: rgba(255, 255, 255, 50); /* Более тёмный фон для активной вкладки */
 }
 QTabBar::tab:hover {
-    background: rgba(255, 255, 255, 90);
+    background: rgba(255, 255, 255, 90); /* Ещё темнее при наведении */
 }
 
+/* === ТАБЛИЦА === */
+QTableView {
+    background: white; /* Белый фон таблицы */
+    border: none; /* Убираем рамку */
+    /* Цвета текста наследуются от * */
+    selection-background-color: rgb(209, 200, 178); /* Цвет фона при выделении */
+    /* selection-color: black; <-- НЕ НУЖНО, наследуется от * */
+}
+
+QTableView::item {
+    padding: 4px; /* Отступы внутри ячейки */
+    min-height: 28px; /* Минимальная высота строки */
+    border: none; /* Убираем границы ячеек */
+    background: white; /* Белый фон ячейки */
+    /* Цвет текста наследуется от * */
+}
+
+/* Заголовок столбцов таблицы */
+QHeaderView::section {
+    background-color: white; /* Белый фон заголовка */
+    /* Цвет текста наследуется от * */
+    padding: 4px 8px; /* Отступы */
+    min-height: 20px; /* Минимальная высота */
+    font-size: 14px; /* Размер шрифта */
+}
+
+/* Скрываем вертикальный заголовок (номера строк) — скрывается в коде */
+QTableView::verticalHeader {
+    width: 0px; /* Убираем ширину */
+    border: none; /* Убираем рамку */
+    background: transparent; /* Прозрачный фон */
+}
+
+/* === ПОЛОСЫ ПРОКРУТКИ === */
+QScrollBar:horizontal {
+    background: white; /* Фон полосы */
+    height: 16px; /* Высота */
+    border: none; /* Убираем рамку */
+}
+QScrollBar::handle:horizontal {
+    background: rgba(209, 200, 178, 1); /* Цвет ползунка */
+    min-width: 20px; /* Минимальная ширина */
+    border-radius: 8px; /* Скруглённые углы */
+}
+/* Убираем стрелки */
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+QScrollBar:vertical {
+    background: white;
+    width: 16px;
+    border: none;
+}
+QScrollBar::handle:vertical {
+    background: rgba(209, 200, 178, 1);
+    min-height: 20px;
+    border-radius: 8px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* === ГРУППОВЫЕ РАМКИ === */
 QGroupBox {
-    border: 1px solid rgba(209, 200, 178, 1);
-    border-radius: 4px;
-    margin-top: 1ex;
-    color: black;
+    border: 1px solid rgba(209, 200, 178, 1); /* Светлая рамка */
+    border-radius: 4px; /* Скруглённые углы */
+    margin-top: 1ex; /* Отступ сверху для заголовка */
+    /* Цвет текста наследуется от * */
 }
 QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top left;
-    left: 10px;
-    padding: 0 3px 0 3px;
-    color: black;
+    subcontrol-origin: margin; /* Позиционирование относительно margin */
+    subcontrol-position: top left; /* Слева сверху */
+    left: 10px; /* Смещение вправо */
+    padding: 0 3px 0 3px; /* Отступы вокруг текста */
+    /* Цвет текста наследуется от * */
 }
 
+/* === ПОЛЯ ВВОДА === */
 QLineEdit {
-    background: rgb(228, 220, 200);
-    border-radius: 4px;
-    selection-background-color: rgb(209, 200, 178);
+    background: rgb(228, 220, 200); /* Тот же цвет, что и кнопки */
+    border-radius: 4px; /* Скруглённые углы */
+    selection-background-color: rgb(209, 200, 178); /* Цвет фона при выделении текста */
+    /* selection-color: black; <-- НЕ НУЖНО, наследуется от * */
 }
 
+/* === МЕНЮ === */
 QMenuBar {
-    background: rgb(252, 245, 228);
+    background: rgb(252, 245, 228); /* Тот же светлый фон */
 }
 QMenuBar::item {
-    background: transparent;
-    padding: 4px 8px;
-    border-radius: 4px;
+    background: transparent; /* Прозрачный фон пункта */
+    padding: 4px 8px; /* Отступы */
+    border-radius: 4px; /* Скруглённые углы */
 }
 QMenuBar::item:selected {
-    background: rgb(213, 205, 187);
-}
-QMenu {
-    background: rgb(252, 245, 228);
-    border: 1px solid rgba(209, 200, 178, 1);
-}
-QMenu::item {
-    padding: 4px 20px;
-    background: transparent;
-}
-QMenu::item:selected {
-    background: rgb(213, 205, 187);
-    color: white;
+    background: rgb(213, 205, 187); /* Более тёмный фон при наведении */
 }
 
+QMenu {
+    background: rgb(252, 245, 228); /* Тот же светлый фон */
+    border: 1px solid rgba(209, 200, 178, 1); /* Лёгкая рамка */
+}
+QMenu::item {
+    padding: 4px 20px; /* Отступы */
+    background: transparent; /* Прозрачный фон */
+}
+QMenu::item:selected {
+    background: rgb(213, 205, 187); /* Более тёмный фон при наведении */
+    /* color: white; <-- НЕ НУЖНО, наследуется от * */
+}
 
 /*
 Dialog windows
 */
 QDialog {
-    background: rgb(252, 245, 228);
+    background: rgb(252, 245, 228); /* Тот же светлый фон */
 }
 QTreeWidget {
-    background: white;
+    background: white; /* Белый фон */
 }
 QHeaderView::section {
-    background-color: white;
+    background-color: white; /* Белый фон заголовка */
+    /* Цвет текста наследуется от * */
 }
 QListWidget {
-    background: white;
+    background: white; /* Белый фон */
+    /* Цвет текста наследуется от * */
 }
