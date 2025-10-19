@@ -1,8 +1,9 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu
 from PyQt6.QtGui import QIcon
 from PyQt6 import QtWidgets
+from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
@@ -90,11 +91,141 @@ class NewYearDialog(ThemedDialog):
         self.ui = Ui_Dialog_NewYear()
         self.ui.setupUi(self)
 
-        # Delete system border
-        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setup_tree_widgets()
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
+
+        # Add empty row to initialization 
+        self.add_empty_group(self.ui.treeW_firstHalf)
+        self.add_empty_group(self.ui.treeW_SecondHalf)
+
+
+    def setup_tree_widgets(self):
+        """ Setup QTreeWidget."""
+        tree_widgets = [self.ui.treeW_firstHalf, self.ui.treeW_SecondHalf]
+        for tree_widget in tree_widgets:
+            tree_widget.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked | QtWidgets.QAbstractItemView.EditTrigger.EditKeyPressed)
+            tree_widget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+            # Connect signal to context menu
+            tree_widget.customContextMenuRequested.connect(lambda pos, tw=tree_widget: self.open_context_menu(pos, tw))
+            
+            tree_widget.itemChanged.connect(self.on_item_changed)
+
+
+    def add_empty_group(self, tree_widget, parent_item=None):
+        """Добавляет одну пустую строку (группу или предмет) в дерево."""
+        if parent_item:
+            # add subject row
+            new_item = QTreeWidgetItem(parent_item)
+        else:
+            # add group row
+            new_item = QTreeWidgetItem(tree_widget)
+
+        new_item.setFlags(new_item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
+        new_item.setText(0, "") # empty row for title
+        new_item.setText(1, "") # empty row for hours
+        return new_item
+
+
+    def on_item_changed(self, item, column):
+        """
+        Обработчик сигнала itemChanged.
+        Вызывается, когда пользователь изменяет текст в элементе.
+        """
+        tree_widget = item.treeWidget()
+        if column == 0 and item.text(0).strip(): 
+            parent = item.parent()
+            if parent:
+                if parent.indexOfChild(item) == parent.childCount() - 1:
+                    self.add_empty_subject(tree_widget, parent)
+            else:
+                if tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1:
+                    self.add_empty_group(tree_widget)
+
+
+    def add_empty_subject(self, tree_widget, parent_item):
+        """Добавляет один пустой дочерний элемент (предмет) к родительскому элементу (группе)."""
+        new_item = self.add_empty_group(tree_widget, parent_item)
+        tree_widget.expandItem(parent_item)
+        return new_item
+
+
+    def open_context_menu(self, position, tree_widget):
+        """Открывает контекстное меню для QTreeWidget."""
+        menu = QMenu(tree_widget)
+        add_group_action = menu.addAction("Добавить группу")
+        add_subject_action = menu.addAction("Добавить предмет")
+        delete_action = menu.addAction("Удалить")
+
+        item = tree_widget.itemAt(position)
+        if item:
+            parent_item = item.parent()
+            if parent_item:
+                 add_group_action.setEnabled(False) 
+                 add_subject_action.setEnabled(False)
+            else:
+                 add_group_action.setEnabled(False) 
+
+            is_last_empty_top_level = (
+                tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1
+                and not item.text(0) and not item.text(1)
+                and item.parent() is None 
+            )
+            if is_last_empty_top_level:
+                 delete_action.setEnabled(False)
+            else:
+                delete_action.triggered.connect(lambda: self.delete_item(tree_widget, item))
+
+            if parent_item is None:
+                add_subject_action.triggered.connect(lambda: self.add_subject_context(tree_widget, item))
+            else:
+                add_subject_action.setEnabled(False)
+
+        else:
+            delete_action.setEnabled(False)
+            add_subject_action.setEnabled(False)
+
+        add_group_action.triggered.connect(lambda: self.add_group_context(tree_widget))
+
+        def start_edit_on_action(action, add_func, *args):
+            def handler():
+                new_item = add_func(tree_widget, *args) if args else add_func(tree_widget)
+                tree_widget.editItem(new_item, 0)
+            action.triggered.connect(handler)
+
+        menu.exec(tree_widget.mapToGlobal(position))
+
+    def add_group_context(self, tree_widget):
+        """Добавляет новую группу через контекстное меню."""
+        new_item = self.add_empty_group(tree_widget)
+        tree_widget.editItem(new_item, 0)
+
+    def add_subject_context(self, tree_widget, parent_item):
+        """Добавляет новый предмет через контекстное меню."""
+        new_item = self.add_empty_subject(tree_widget, parent_item)
+        tree_widget.editItem(new_item, 0)
+
+
+    def delete_item(self, tree_widget, item):
+        """Удаляет выбранный элемент."""
+        is_last_empty_top_level = (
+            tree_widget.indexOfTopLevelItem(item) == tree_widget.topLevelItemCount() - 1
+            and not item.text(0) and not item.text(1)
+            and item.parent() is None
+        )
+        if is_last_empty_top_level:
+             return
+
+        parent = item.parent()
+        if parent:
+            parent.removeChild(item)
+        else:
+            index = tree_widget.indexOfTopLevelItem(item)
+            if index >= 0:
+                tree_widget.takeTopLevelItem(index)
+                if tree_widget.topLevelItemCount() == 0:
+                     self.add_empty_group(tree_widget)
 
 
 # === FilterDialog ===
