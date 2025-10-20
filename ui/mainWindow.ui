@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>898</width>
-    <height>527</height>
+    <height>532</height>
    </rect>
   </property>
   <property name="font">
@@ -38,7 +38,10 @@
     <property name="bottomMargin">
      <number>3</number>
     </property>
-    <property name="spacing">
+    <property name="horizontalSpacing">
+     <number>5</number>
+    </property>
+    <property name="verticalSpacing">
      <number>0</number>
     </property>
     <item row="0" column="2">
@@ -510,7 +513,7 @@
      <x>0</x>
      <y>0</y>
      <width>898</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">

@@ -1,5 +1,3 @@
-from idlelib import query
-
 from general import DBBase
 
 
@@ -55,10 +53,20 @@ class WorkDayDAO(DBBase):
             print(f"Произошла ошибка при получении всех рабочих дней: {e}")
             return []
 
-    def get_work_days_by_group(self, group_name) -> list:
-        """Получение рабочих дней по группе"""
+    def get_work_days_by_group(self, group_name, use_like=False) -> list:
+        """
+        Получение рабочих дней по группе
+        :parameter use_like: Параметр, означающий, будет ли в запросе использоваться констуркция LIKE
+        """
 
-        query = "SELECT * FROM workDays WHERE group_name = ?"
+        # Формируем запрос
+        if use_like:
+            query = "SELECT * FROM workDays WHERE group_name LIKE ?"
+            # Подготавливаем значение с % по краям
+            group_name = f"%{group_name}%"
+        else:
+            query = "SELECT * FROM workDays WHERE group_name = ?"
+
         try:
             result = self.cursor.execute(query, (group_name,)).fetchall()
             return result
@@ -66,10 +74,20 @@ class WorkDayDAO(DBBase):
             print(f"Произошла ошибка при получении рабочих дней по группе: {e}")
             return []
 
-    def get_work_days_by_subject(self, subject_name) -> list:
-        """Получение рабочих дней по предмету"""
+    def get_work_days_by_subject(self, subject_name, use_like=False) -> list:
+        """
+        Получение рабочих дней по предмету
+        :parameter use_like: Параметр, означающий, будет ли в запросе использоваться констуркция LIKE
+        """
 
-        query = "SELECT * FROM workDays WHERE subject_name = ?"
+        # Формируем запрос
+        if use_like:
+            query = "SELECT * FROM workDays WHERE subject_name LIKE ?"
+            # Подготавливаем значение с % по краям
+            subject_name = f"%{subject_name}%"
+        else:
+            query = "SELECT * FROM workDays WHERE subject_name = ?"
+
         try:
             result = self.cursor.execute(query, (subject_name,)).fetchall()
             return result
@@ -88,23 +106,35 @@ class WorkDayDAO(DBBase):
             print(f"Произошла ошибка при получении рабочих дней по дате: {e}")
             return []
 
-    def update_work_day(self, **kwargs) -> str | None:
+    def update_work_day(self, id, **kwargs) -> str | None:
         """Обновление рабочего дня"""
-        pass
-        # query = """UPDATE subjects SET name = ? WHERE name = ?"""
-        # try:
-        #     result = self.cursor.execute(query, (new_name, current_name))
-        #     self._connection.commit()
-        #
-        #     # Проверяем, что запрос выполнился минимум над 1 записью
-        #     if self.cursor.rowcount == 0:
-        #         return None
-        #
-        #     return new_name
-        # except Exception as e:
-        #     print(f"Произошла ошибка при обновлении предмета: {e}")
-        #     if self._connection:
-        #         self._connection.rollback()
+
+        # Формируем строку запроса на основе переданных именованных аргументов
+        query = """UPDATE workDays SET """
+        for k in kwargs:
+            query += f"{k} = ?, """
+        query = query[:-2] + """ WHERE id = ?"""
+
+        # Формируем список значений
+        values = list([v for v in kwargs.values()])
+        values.append(id)
+
+        try:
+            result = self.cursor.execute(query, tuple(values))
+            self._connection.commit()
+
+            # Проверяем, что запрос выполнился минимум над 1 записью
+            if self.cursor.rowcount == 0:
+                return None
+
+            # Возвращаем набор данных, записанный в бд, используя встроенную переменную ROWID в sqlite
+            select_query = """SELECT * FROM workDays WHERE id = ?"""
+            self.cursor.execute(select_query, (id,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            print(f"Произошла ошибка при обновлении предмета: {e}")
+            if self._connection:
+                self._connection.rollback()
 
     def delete_work_day(self, work_day_id) -> str | None:
         """Удаление записи о рабочем дне"""
@@ -120,9 +150,6 @@ class WorkDayDAO(DBBase):
 
             return work_day_id
         except Exception as e:
-            print(f"Произошла ошибка при удалении предмета: {e}")
+            print(f"Произошла ошибка при удалении рабочего дня: {e}")
             if self._connection:
                 self._connection.rollback()
-
-workday = WorkDayDAO()
-print(workday.create_work_day("16-05-2025", "СРЕДИЗЕМНОЕ МОРЕ", "23ИСП-1", 1, 2))

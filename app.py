@@ -1,5 +1,6 @@
 import sys
 import os
+import configparser
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu
 from PyQt6.QtGui import QIcon
 from PyQt6 import QtWidgets
@@ -20,14 +21,26 @@ class ThemeManager(QObject):
 
     def __init__(self):
         super().__init__()
-        # Set start theme
-        self.current_theme = "light"
+        # Создание объекта чтения конфига
+        config = configparser.ConfigParser()
+        read_config = config.read(rf'settings/config.ini')
+
+        if not read_config:
+            self.create_config()
+
+        # get and set start theme
+        self.current_theme = config['theme']['current_theme']
 
     def set_theme(self, theme: str):
         if theme not in ("light", "dark", "blue"):
             return
         self.current_theme = theme
         self.theme_changed.emit(theme)
+        config = configparser.ConfigParser()
+        config.read(rf'settings/config.ini')
+        config['theme']['current_theme'] = theme
+        with open(rf'settings/config.ini', 'w', encoding='utf-8') as configfile:
+            config.write(configfile)
 
     def get_theme(self) -> str:
         return self.current_theme
@@ -45,6 +58,19 @@ class ThemeManager(QObject):
         except FileNotFoundError:
             print(f"Theme file not found: {path}")
             return ""
+
+    def create_config(self):
+        """Create config file"""
+        config = configparser.ConfigParser()
+
+        # Определение структуры конфига
+        config['theme'] = {
+            'current_theme': 'blue'
+        }
+
+        # Создание конфига
+        with open(rf'settings/config.ini', 'w', encoding='utf-8') as configfile:
+            config.write(configfile)
 
 
 # === ThemedWindow (base class for Window) ===
