@@ -1,24 +1,30 @@
-CREATE TABLE IF NOT EXISTS `Group` (
-	`name` TEXT NOT NULL UNIQUE
+CREATE TABLE "groups" (
+	"name"	TEXT NOT NULL UNIQUE
 );
-CREATE TABLE IF NOT EXISTS `Subject` (
-	`name` TEXT NOT NULL UNIQUE
+
+CREATE TABLE "subjects" (
+	"name"	TEXT NOT NULL UNIQUE
 );
-CREATE TABLE IF NOT EXISTS `WorkDay` (
-	`id` integer primary key NOT NULL UNIQUE,
-	`date` TEXT NOT NULL,
-	`subject_name` TEXT NOT NULL,
-	`group_name` TEXT NOT NULL,
-	`semestr` INTEGER NOT NULL,
-FOREIGN KEY(`subject_name`) REFERENCES `Subject`(`name`),
-FOREIGN KEY(`group_name`) REFERENCES `Group`(`name`)
+
+CREATE TABLE "workDays" (
+	"id"	integer NOT NULL UNIQUE,
+	"date"	TEXT NOT NULL,
+	"subject_name"	TEXT NOT NULL,
+	"group_name"	TEXT NOT NULL,
+	"semester"	INTEGER NOT NULL,
+	"hours"	INTEGER NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("group_name") REFERENCES "groups"("name"),
+	FOREIGN KEY("subject_name") REFERENCES "subjects"("name")
 );
-CREATE TABLE IF NOT EXISTS `Curriculum` (
-	`id` integer primary key NOT NULL UNIQUE,
-	`semestr` INTEGER NOT NULL,
-	`total_hour` INTEGER NOT NULL,
-	`group_name` TEXT NOT NULL,
-	`subject_name` TEXT NOT NULL,
-FOREIGN KEY(`group_name`) REFERENCES `Group`(`name`),
-FOREIGN KEY(`subject_name`) REFERENCES `Subject`(`name`)
+
+CREATE TABLE "curriculums" (
+	"id"	integer NOT NULL UNIQUE,
+	"semester"	INTEGER NOT NULL,
+	"total_hour"	INTEGER NOT NULL,
+	"group_name"	TEXT NOT NULL,
+	"subject_name"	TEXT NOT NULL,
+	PRIMARY KEY("id"),
+	FOREIGN KEY("group_name") REFERENCES "groups"("name"),
+	FOREIGN KEY("subject_name") REFERENCES "subjects"("name")
 );
