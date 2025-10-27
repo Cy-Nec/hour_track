@@ -1,4 +1,4 @@
-from general import DBBase
+from .general import DBBase
 
 
 class GroupDAO(DBBase):
