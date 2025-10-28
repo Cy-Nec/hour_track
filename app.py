@@ -161,7 +161,7 @@ class NewYearDialog(ThemedDialog):
                 if not new_group is None:
                     # Меняем статус группы
                     add_group_status = True
-                    msg = QMessageBox(self, "Группа успешно добавлена")
+                    msg = QMessageBox(QMessageBox.Icon.Information, "Группа успешно добавлена", "", QMessageBox.StandardButton.Ok, self)
                     msg.exec()
 
 

@@ -1,9 +1,10 @@
+from settings.settings import ROOT_PATH
 from .general import DBBase
 
 
 class GroupDAO(DBBase):
     def __init__(self, db=None):
-        super().__init__(r"D:\hour_track\db\hour_track.db")
+        super().__init__(rf"{ROOT_PATH}\db\hour_track.db")
         self.cursor = self.create_cursor()
 
     def create_group(self, group_name) -> str | None:

@@ -1,9 +1,10 @@
 from general import DBBase
+from settings.settings import ROOT_PATH
 
 
 class SubjectDAO(DBBase):
     def __init__(self, db=None):
-        super().__init__(r"D:\hour_track\db\hour_track.db")
+        super().__init__(rf"{ROOT_PATH}\db\hour_track.db")
         self.cursor = self.create_cursor()
 
     def create_subject(self, subject_name) -> str | None:
