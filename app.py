@@ -133,6 +133,8 @@ class NewYearDialog(ThemedDialog):
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
 
+        self.load_info()
+
         # Добавляем обработчики кнопок
         self.ui.btn_Accept.clicked.connect(self.accept_info)
 
@@ -180,7 +182,6 @@ class NewYearDialog(ThemedDialog):
                 
                 new_curriculum = self.curriculum_service.create_curriculum(semester=current_semester, total_hour=current_item[1], group_name=parent_item.text(0), subject_name=current_item[0])
 
-
     def get_all_items_with_parent(self, tree_widget):
         """Возвращает список всех элементов с указанием родителя"""
         data = []
@@ -210,6 +211,68 @@ class NewYearDialog(ThemedDialog):
             traverse_item(item)
 
         return data
+
+    def load_info(self):
+        ''' Функция загрузки плана из бд '''
+        # Загружаем данные для первого семестра (0) в treeW_firstHalf
+        semester_0_info = self.get_curriculum_hierarchy_by_semester(semester=0)
+        self._load_and_expand_tree(self.ui.treeW_firstHalf, semester_0_info)
+
+        # Загружаем данные для второго семестра (1) в treeW_SecondHalf
+        semester_1_info = self.get_curriculum_hierarchy_by_semester(semester=1)
+        self._load_and_expand_tree(self.ui.treeW_SecondHalf, semester_1_info)
+
+    def _load_and_expand_tree(self, tree_widget, semester_data):
+        """
+        Вспомогательная функция для загрузки данных в tree_widget и разворачивания корневых элементов.
+        """
+        tree_widget.clear()
+        for group_info in semester_data:
+            group_item = QTreeWidgetItem(tree_widget)
+            group_item.setText(0, group_info["name"])
+            for subject_info in group_info["subjects"]:
+                subject_item = QTreeWidgetItem(group_item)
+                subject_item.setText(0, subject_info["name"])
+                subject_item.setText(1, subject_info["hours"])
+
+        for i in range(tree_widget.topLevelItemCount()):
+            item = tree_widget.topLevelItem(i)
+            tree_widget.expandItem(item)
+
+    def get_curriculum_hierarchy_by_semester(self, semester):
+        """
+        Возвращает иерархический список групп и предметов для указанного семестра.
+
+        Returns:
+            list: Список словарей, каждый содержит:
+                - 'name': имя группы
+                - 'subjects': список словарей с 'name' и 'hours'
+        """
+        # Получаем все записи для семестра
+        curriculums = self.curriculum_service.get_curriculums_by_semester(semester)
+
+        # Группируем по group_name
+        groups_dict = {}
+
+        for row in curriculums:
+            # row[0] = id, row[1] = semester, row[2] = total_hour, row[3] = group_name, row[4] = subject_name
+            group_name = row[3]
+            subject_name = row[4]
+            total_hour = str(row[2])  # Приводим к строке для отображения
+
+            if group_name not in groups_dict:
+                groups_dict[group_name] = {
+                    "name": group_name,
+                    "subjects": []
+                }
+
+            groups_dict[group_name]["subjects"].append({
+                "name": subject_name,
+                "hours": total_hour
+            })
+
+        # Преобразуем в список
+        return list(groups_dict.values())
 
     def setup_tree_widgets(self):
         """ Setup QTreeWidget."""

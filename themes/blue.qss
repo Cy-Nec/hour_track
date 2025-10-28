@@ -156,6 +156,7 @@ QDialog {
 }
 QTreeWidget {
     background: rgb(22, 32, 42); /* Тот же тёмно-синий */
+    font-size: 14px
 }
 QHeaderView::section {
     background-color: rgba(30, 50, 75, 220); /* Тот же синий */

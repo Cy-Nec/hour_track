@@ -166,6 +166,7 @@ QDialog {
 }
 QTreeWidget {
     background: white; /* Белый фон */
+    font-size: 14px
 }
 QHeaderView::section {
     background-color: white; /* Белый фон заголовка */
