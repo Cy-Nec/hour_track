@@ -16,6 +16,8 @@ from ui.reportDialog import Ui_Dialog_Report
 from calendar_helper import setup_calendar_tables_for_half
 
 from services.group_services import GroupDAO
+from services.curriculum_services import CurriculumDAO
+from services.subject_services import SubjectDAO
 
 
 # === ThemeManager ===
@@ -125,6 +127,8 @@ class NewYearDialog(ThemedDialog):
 
         # Создаём объекты классов сервисов для БД
         self.group_service = GroupDAO()
+        self.subject_service = SubjectDAO()
+        self.curriculum_service = CurriculumDAO()
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
@@ -138,8 +142,8 @@ class NewYearDialog(ThemedDialog):
         # Получаем текущий treeWidget в зависимости от выбранного полугодия
         current_tree_widget = self.ui.treeW_firstHalf if current_semester == 0 else self.ui.treeW_SecondHalf
 
-        # all_data = self.get_all_items_with_parent(current_tree_widget)
-        # print(all_data)
+        all_data = self.get_all_items_with_parent(current_tree_widget)
+        print(all_data)
 
         # Инициализируем флаги для отслеживания результата работы добавления
         add_group_status = False
@@ -163,6 +167,18 @@ class NewYearDialog(ThemedDialog):
                     add_group_status = True
                     msg = QMessageBox(QMessageBox.Icon.Information, "Группа успешно добавлена", "", QMessageBox.StandardButton.Ok, self)
                     msg.exec()
+
+            elif parent_item:
+                new_subject_name = current_item[0] # Получение имени группы
+                new_subject = self.subject_service.create_subject(new_subject_name)  # Создание новой группы
+
+                if not new_subject is None:
+                    # Меняем статус группы
+                    add_subject_status = True
+                    msg = QMessageBox(QMessageBox.Icon.Information, "Предмет успешно добавлен", "", QMessageBox.StandardButton.Ok, self)
+                    msg.exec()
+                
+                new_curriculum = self.curriculum_service.create_curriculum(semester=current_semester, total_hour=current_item[1], group_name=parent_item.text(0), subject_name=current_item[0])
 
 
     def get_all_items_with_parent(self, tree_widget):
