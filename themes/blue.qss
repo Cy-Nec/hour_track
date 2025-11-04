@@ -160,9 +160,7 @@ QTreeWidget {
 }
 QHeaderView::section {
     background-color: rgba(30, 50, 75, 220); /* Тот же синий */
-    /* color: white; <-- НЕ НУЖНО, наследуется от * */
 }
 QListWidget {
     background: rgb(22, 32, 42); /* Тот же тёмно-синий */
-    /* color: white; <-- НЕ НУЖНО, наследуется от * */
 }
