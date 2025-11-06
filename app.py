@@ -150,8 +150,8 @@ class GroupDialog(ThemedDialog):
     
     def accept_and_sync(self):
         """
-        Синхронизирует список групп в QListWidget с базой данных.
-        Удаляет из БД группы, отсутствующие в списке, и добавляет в БД группы, отсутствующие в БД.
+        Синхронизирует список групп в QListWidget с базой данных
+        Удаляет из БД группы, отсутствующие в списке, и добавляет в БД группы, отсутствующие в БД
         """
         errors_occurred = False
         error_messages = []
@@ -224,7 +224,7 @@ class GroupDialog(ThemedDialog):
 
     def count_empty_items(self):
         """
-        Вспомогательный метод для подсчёта пустых элементов в QListWidget.
+        Вспомогательный метод для подсчёта пустых элементов в QListWidget
         """
         count = 0
         for i in range(self.ui.listWidget_Groups.count()):
@@ -234,8 +234,8 @@ class GroupDialog(ThemedDialog):
 
     def delete_group(self):
         """
-        Удаляет выбранную группу из QListWidget и QComboBox.
-        Использует текущий текст QComboBox как имя удаляемой группы.
+        Удаляет выбранную группу из QListWidget и QComboBox
+        Использует текущий текст QComboBox как имя удаляемой группы
         """
         name_to_delete = self.ui.comboBox_Groups.currentText().strip()
 
