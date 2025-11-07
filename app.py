@@ -2,9 +2,9 @@ import sys
 import os
 import configparser
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter
-from PyQt6.QtGui import QIcon, QPalette
+from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt, QTimer
 
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
@@ -26,6 +26,18 @@ class ThemeManager(QObject):
 
     def __init__(self):
         super().__init__()
+
+        self.custom_font_path = r"resources\fonts\CascadiaCode\CascadiaCode-VariableFont_wght.ttf"
+        self.font_family = None
+
+        # Загрузка шрифта
+        if self.custom_font_path and os.path.exists(self.custom_font_path):
+            font_id = QFontDatabase.addApplicationFont(self.custom_font_path)
+            if font_id == -1:
+                print("⚠️ Не удалось загрузить шрифт через QFontDatabase")
+        else:
+            print("⚠️ Путь к шрифту некорректен или файл не существует")
+
         # Создание объекта чтения конфига
         config = configparser.ConfigParser()
         read_config = config.read(rf'settings/config.ini')
@@ -59,7 +71,14 @@ class ThemeManager(QObject):
         path = os.path.join("themes", f"{self.current_theme}.qss")
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return f.read()
+                stylesheet = f.read()
+
+            # Добавляем шрифт в начало, если он загружен
+            if self.font_family:
+                font_style = f"* {{ font-family: \"{self.font_family}\"; }}\n\n"
+                stylesheet = font_style + stylesheet
+
+            return stylesheet
         except FileNotFoundError:
             print(f"Theme file not found: {path}")
             return ""
@@ -781,6 +800,9 @@ class MainWindow(ThemedWindow):
 
         # Инициализируем начальное состояние — "Первое" полугодие активно
         self.on_half_changed()
+        QTimer.singleShot(0, self.update_table_sizes)
+
+        self.ui.tabW_SlidesFirstHalf.currentChanged.connect(self.on_tab_changed)
 
         # Connection menu
         self.ui.light.triggered.connect(lambda: self.theme_manager.set_theme("light"))
@@ -812,6 +834,14 @@ class MainWindow(ThemedWindow):
             if table_view:
                 table_view.verticalHeader().setVisible(False)
 
+    @pyqtSlot(str)
+    def on_theme_changed(self, theme: str):
+        """Call when theme switched"""
+        self.setStyleSheet(self.theme_manager.get_stylesheet())
+        self.update_icons()
+
+        QTimer.singleShot(0, self.update_table_sizes)
+
     @pyqtSlot()
     def on_half_changed(self):
         """Общий обработчик изменения полугодия"""
@@ -819,6 +849,17 @@ class MainWindow(ThemedWindow):
             setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.first_half)
         elif self.ui.rBtn_Second.isChecked():
             setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.second_half)
+
+        self.update_table_sizes()
+
+    def on_tab_changed(self, index):
+        """Вызывается при переключении вкладки"""
+        # Обновляем размеры только для текущей вкладки
+        current_tab = self.ui.tabW_SlidesFirstHalf.currentWidget()
+        table_view = current_tab.findChild(QtWidgets.QTableView)
+        if table_view:
+            table_view.resizeColumnsToContents()
+            table_view.updateGeometry()
 
     def update_icons(self):
         """Update icons when theme switched"""
@@ -834,6 +875,21 @@ class MainWindow(ThemedWindow):
             self.ui.btn_NewYear.setIcon(QIcon(self.theme_manager.get_icon_path("new_year")))
         if hasattr(self.ui, 'btn_Default'):
             self.ui.btn_Default.setIcon(QIcon(self.theme_manager.get_icon_path("refresh")))
+    
+    def update_table_sizes(self):
+        """Обновляет размеры всех QTableView в виджетах вкладок"""
+        # Список всех виджетов вкладок
+        tabs = [
+            self.ui.tabW_SlidesFirstHalf.widget(i)
+            for i in range(self.ui.tabW_SlidesFirstHalf.count())
+        ]
+
+        for tab in tabs:
+            # На каждой вкладке ищем QTableView
+            table_view = tab.findChild(QtWidgets.QTableView)
+            if table_view:
+                table_view.resizeColumnsToContents()
+                table_view.updateGeometry()
 
     def open_new_year_dialog(self):
         dialog = NewYearDialog(self.theme_manager)
@@ -871,3 +927,4 @@ if __name__ == '__main__':
     window.show()
 
     sys.exit(app.exec())
+
