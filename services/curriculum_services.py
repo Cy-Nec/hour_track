@@ -78,6 +78,16 @@ class CurriculumDAO(DBBase):
         except Exception as e:
             print(f"Произошла ошибка при получении учебных планов по группе: {e}")
             return []
+        
+    def get_curriculums_by_group_and_semester(self, group_name, semester) -> list:
+        """Получение учебных планов по группе и семестру"""
+        query = "SELECT * FROM curriculums WHERE group_name = ? AND semester = ?"
+        try:
+            result = self.cursor.execute(query, (group_name, semester)).fetchall()
+            return result
+        except Exception as e:
+            print(f"Произошла ошибка при получении учебных планов по группе {group_name} и семестру {semester}: {e}")
+            return []
 
     def get_curriculums_by_subject(self, subject_name, use_like=False) -> list:
         """Получение учебных планов по предмету"""

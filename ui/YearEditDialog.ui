@@ -6,29 +6,69 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>517</width>
-    <height>630</height>
+    <width>671</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Назначение дисциплин</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
+  <layout class="QGridLayout" name="gridLayout" columnstretch="0,1" columnminimumwidth="0,0">
    <item row="0" column="1">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QListView" name="listView_Hours"/>
+       <widget class="QTableWidget" name="tableWidget_Hours">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::MultiSelection</enum>
+        </property>
+        <attribute name="verticalHeaderVisible">
+         <bool>true</bool>
+        </attribute>
+        <column>
+         <property name="text">
+          <string>Предмет</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Часы</string>
+         </property>
+        </column>
+       </widget>
       </item>
       <item>
-       <widget class="QFrame" name="">
+       <widget class="QFrame" name="frame">
         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,1,1">
+         <property name="spacing">
+          <number>4</number>
+         </property>
+         <property name="sizeConstraint">
+          <enum>QLayout::SetDefaultConstraint</enum>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item>
           <widget class="QPushButton" name="btn_AddSelected">
            <property name="minimumSize">
             <size>
-             <width>24</width>
-             <height>24</height>
+             <width>28</width>
+             <height>28</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -52,8 +92,8 @@
           <widget class="QPushButton" name="btn_RemoveSelected">
            <property name="minimumSize">
             <size>
-             <width>24</width>
-             <height>24</height>
+             <width>28</width>
+             <height>28</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -75,6 +115,17 @@
          </item>
          <item>
           <widget class="QPushButton" name="btn_Cancel">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
            <property name="text">
             <string>Отменить</string>
            </property>
@@ -82,6 +133,17 @@
          </item>
          <item>
           <widget class="QPushButton" name="btn_Accept">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
            <property name="text">
             <string>Применить</string>
            </property>
@@ -94,10 +156,21 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="QFrame" name="">
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,5">
+    <widget class="QFrame" name="frame">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,10">
       <item>
        <widget class="QGroupBox" name="groupBox_Semesters">
+        <property name="minimumSize">
+         <size>
+          <width>94</width>
+          <height>94</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
         <property name="title">
          <string>Семестры</string>
         </property>
@@ -126,14 +199,32 @@
          <property name="text">
           <string>Первый</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="comboBox_Groups"/>
+       <widget class="QComboBox" name="comboBox_Groups">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+       </widget>
       </item>
       <item>
-       <widget class="QListView" name="listView_Subjects"/>
+       <widget class="QListWidget" name="listWidget_Subjects">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::MultiSelection</enum>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

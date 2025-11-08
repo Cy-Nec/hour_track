@@ -1,7 +1,7 @@
 import sys
 import os
 import configparser
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidgetItem
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt, QTimer
@@ -13,6 +13,7 @@ from ui.sortDialog import Ui_Dialog_Sort
 from ui.about import Ui_about
 from ui.reportDialog import Ui_Dialog_Report
 from ui.groupDialog import Ui_Dialog_Group
+from ui.YearEditDialog import Ui_Dialog_YearEdit
 from calendar_helper import setup_calendar_tables_for_half
 
 from services.group_services import GroupDAO
@@ -34,9 +35,16 @@ class ThemeManager(QObject):
         if self.custom_font_path and os.path.exists(self.custom_font_path):
             font_id = QFontDatabase.addApplicationFont(self.custom_font_path)
             if font_id == -1:
-                print("⚠️ Не удалось загрузить шрифт через QFontDatabase")
+                print("Не удалось загрузить шрифт через QFontDatabase")
+            else:
+                font_families = QFontDatabase.applicationFontFamilies(font_id)
+                if font_families:
+                    self.font_family = font_families[0]
+                    print(f"Шрифт успешно загружен: {self.font_family}")
+                else:
+                    print("Не удалось получить имя шрифта из загруженного файла.")
         else:
-            print("⚠️ Путь к шрифту некорректен или файл не существует")
+            print("Путь к шрифту некорректен или файл не существует")
 
         # Создание объекта чтения конфига
         config = configparser.ConfigParser()
@@ -134,6 +142,202 @@ class ThemedDialog(QDialog):
         """For children classes"""
         pass
 
+
+class YearEditDialog(ThemedDialog):
+    def __init__(self, theme_manager):
+        super().__init__(theme_manager)
+        self.ui = Ui_Dialog_YearEdit()
+        self.ui.setupUi(self)
+        
+        self.group_service = GroupDAO()
+        self.subject_service = SubjectDAO()
+        self.curriculum_service = CurriculumDAO()
+        
+        self.on_theme_changed(self.theme_manager.get_theme())
+        self.update_icons()
+        
+        self.load_groups()
+        self.load_subjects()
+        
+        # Настройка ширины колонок в таблице
+        header = self.ui.tableWidget_Hours .horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # Подключение сигналов от кнопок
+        self.ui.btn_AddSelected.clicked.connect(self.move_selected_items_to_table)
+        self.ui.btn_RemoveSelected.clicked.connect(self.move_selected_items_to_list)
+        self.ui.btn_Accept.clicked.connect(self.apply_changes)
+        
+        self.ui.comboBox_Groups.currentTextChanged.connect(self.on_group_or_semester_changed)
+        self.ui.radioButton_First.toggled.connect(self.on_group_or_semester_changed)
+        self.ui.radioButton_Second.toggled.connect(self.on_group_or_semester_changed)
+
+    def update_icons(self):
+        """Update icons when theme switched"""
+        if hasattr(self.ui, 'btn_RemoveSelected'):
+            self.ui.btn_RemoveSelected.setIcon(QIcon(self.theme_manager.get_icon_path("left")))
+        if hasattr(self.ui, 'btn_AddSelected'):
+            self.ui.btn_AddSelected.setIcon(QIcon(self.theme_manager.get_icon_path("right")))
+            
+    def load_groups(self):
+        try:
+            groups = self.group_service.get_all_groups()
+            for group in groups:
+                self.ui.comboBox_Groups.addItem(group[0])
+
+            self.ui.comboBox_Groups.setCurrentIndex(-1)
+        except Exception as e:
+            print(f"Произошла ошибка при загрузке групп: {e}")  
+    
+    def load_subjects(self):
+        try:
+            subjects = self.subject_service.get_all_subjects()
+            for subject in subjects:
+                self.ui.listWidget_Subjects.addItem(subject[0])
+        except Exception as e:
+            print(f"Произошла ошибка при загрузке предметов: {e}")  
+            
+    def move_selected_items_to_table(self):
+        selected_items = self.ui.listWidget_Subjects.selectedItems()
+
+        if not selected_items:
+            return  
+
+        for item in selected_items:
+            text = item.text()
+
+            row_position = self.ui.tableWidget_Hours.rowCount()
+            self.ui.tableWidget_Hours.insertRow(row_position)
+
+            self.ui.tableWidget_Hours.setItem(row_position, 0, QTableWidgetItem(text))
+
+        for item in reversed(selected_items):
+            row = self.ui.listWidget_Subjects.row(item)
+            self.ui.listWidget_Subjects.takeItem(row)
+            
+    def move_selected_items_to_list(self):
+        selected_ranges = self.ui.tableWidget_Hours.selectedRanges()
+        rows_to_remove = []
+
+        for range_obj in selected_ranges:
+            for row in range(range_obj.topRow(), range_obj.bottomRow() + 1):
+                if row not in rows_to_remove:
+                    rows_to_remove.append(row)
+
+        rows_to_remove.sort(reverse=True)
+
+        for row in rows_to_remove:
+            item_text = self.ui.tableWidget_Hours.item(row, 0).text() if self.ui.tableWidget_Hours.item(row, 0) else ""
+
+            self.ui.listWidget_Subjects.addItem(item_text)
+            self.ui.tableWidget_Hours.removeRow(row)
+    
+    def on_group_or_semester_changed(self):
+        """
+        Загружает данные в tableWidget_Hours и listWidget_Subjects
+        в зависимости от выбранной группы и активного radio button (семестр).
+        """
+        group_name = self.ui.comboBox_Groups.currentText()
+        if not group_name: 
+            self.ui.tableWidget_Hours.setRowCount(0)  
+            self.ui.listWidget_Subjects.clear()     
+            self.load_subjects()  
+            return
+
+        if self.ui.radioButton_First.isChecked():
+            semester = 1
+        elif self.ui.radioButton_Second.isChecked():
+            semester = 2
+        else:
+            self.ui.tableWidget_Hours.setRowCount(0)
+            self.ui.listWidget_Subjects.clear()
+            return
+
+        try:
+            curriculums = self.curriculum_service.get_curriculums_by_group_and_semester(group_name, semester)
+
+            self.ui.tableWidget_Hours.setRowCount(0)
+
+            for row_data in curriculums:
+                subject_name = row_data[4]  
+                total_hour = row_data[2]    
+                row_position = self.ui.tableWidget_Hours.rowCount()
+                self.ui.tableWidget_Hours.insertRow(row_position)
+
+                self.ui.tableWidget_Hours.setItem(row_position, 0, QTableWidgetItem(str(subject_name)))
+                self.ui.tableWidget_Hours.setItem(row_position, 1, QTableWidgetItem(str(total_hour)))
+
+            # Загрузка данных из бд
+            all_subjects_from_db = [s[0] for s in self.subject_service.get_all_subjects()]
+            subjects_in_table = []
+            for row in range(self.ui.tableWidget_Hours.rowCount()):
+                item = self.ui.tableWidget_Hours.item(row, 0)
+                if item:
+                    subjects_in_table.append(item.text())
+
+            subjects_not_in_table = [s for s in all_subjects_from_db if s not in subjects_in_table]
+
+            self.ui.listWidget_Subjects.clear()
+            self.ui.listWidget_Subjects.addItems(subjects_not_in_table)
+
+        except Exception as e:
+            print(f"Произошла ошибка при загрузке данных для группы {group_name} и семестра {semester}: {e}")
+            
+    def apply_changes(self):
+        """
+        Синхронизирует данные из tableWidget_Hours с БД.
+        Удаляет старые записи для группы и семестра, добавляет новые из таблицы.
+        """
+        group_name = self.ui.comboBox_Groups.currentText()
+        if not group_name:
+            QMessageBox.information(self, "Не выбрана группа. Невозможно сохранить данные.")
+            return
+
+        if self.ui.radioButton_First.isChecked():
+            semester = 1
+        elif self.ui.radioButton_Second.isChecked():
+            semester = 2
+        else:
+            return
+
+        try:
+            old_curriculums = self.curriculum_service.get_curriculums_by_group_and_semester(group_name, semester)
+            for curriculum in old_curriculums:
+                curriculum_id = curriculum[0]  
+                self.curriculum_service.delete_curriculum(curriculum_id)
+
+            for row in range(self.ui.tableWidget_Hours.rowCount()):
+                item_subject = self.ui.tableWidget_Hours.item(row, 0)
+                item_hour = self.ui.tableWidget_Hours.item(row, 1)
+
+                if not item_subject or not item_hour:
+                    continue  
+
+                subject_name = item_subject.text().strip()
+                total_hour_str = item_hour.text().strip()
+
+                if not subject_name or not total_hour_str:
+                    continue  
+
+                try:
+                    total_hour = int(total_hour_str) 
+                except ValueError:
+                    QMessageBox.information(self, f"Некорректное значение часов для предмета '{subject_name}': {total_hour_str}")
+                    continue
+
+                # Создаём новую запись в БД
+                self.curriculum_service.create_curriculum(
+                    semester=semester,
+                    total_hour=total_hour,
+                    group_name=group_name,
+                    subject_name=subject_name
+                )
+            QMessageBox.information(self, "Успех", f"Данные для группы '{group_name}' и семестра {semester} успешно сохранены.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при сохранении данных: {e}")
+        
+        
 class GroupDialog(ThemedDialog):
     def __init__(self, theme_manager):
         super().__init__(theme_manager)
@@ -166,6 +370,10 @@ class GroupDialog(ThemedDialog):
             self.ui.btn_RemoveLine.setIcon(QIcon(self.theme_manager.get_icon_path("remove")))
         if hasattr(self.ui, 'btn_AddLine'):
             self.ui.btn_AddLine.setIcon(QIcon(self.theme_manager.get_icon_path("add")))
+        if hasattr(self.ui, 'btn_Delete'):
+            self.ui.btn_Delete.setIcon(QIcon(self.theme_manager.get_icon_path('delete')))
+        if hasattr(self.ui, 'btn_Update'):
+            self.ui.btn_Update.setIcon(QIcon(self.theme_manager.get_icon_path('refresh')))
     
     def accept_and_sync(self):
         """
@@ -444,7 +652,6 @@ class GroupDialog(ThemedDialog):
             self.ui.lineEdit_group.clear()
 
     
-
 # === NewYearDialog ===
 class NewYearDialog(ThemedDialog):
     def __init__(self, theme_manager: ThemeManager):
@@ -875,6 +1082,10 @@ class MainWindow(ThemedWindow):
             self.ui.btn_NewYear.setIcon(QIcon(self.theme_manager.get_icon_path("new_year")))
         if hasattr(self.ui, 'btn_Default'):
             self.ui.btn_Default.setIcon(QIcon(self.theme_manager.get_icon_path("refresh")))
+        if hasattr(self.ui, 'btn_Group'):
+            self.ui.btn_Group.setIcon(QIcon(self.theme_manager.get_icon_path("group")))
+        if hasattr(self.ui, 'btn_Subject'):
+            self.ui.btn_Subject.setIcon(QIcon(self.theme_manager.get_icon_path("subject")))
     
     def update_table_sizes(self):
         """Обновляет размеры всех QTableView в виджетах вкладок"""
@@ -892,7 +1103,7 @@ class MainWindow(ThemedWindow):
                 table_view.updateGeometry()
 
     def open_new_year_dialog(self):
-        dialog = NewYearDialog(self.theme_manager)
+        dialog = YearEditDialog(self.theme_manager)
         dialog.exec()
 
     def open_filter_dialog(self):
