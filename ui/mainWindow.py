@@ -272,7 +272,7 @@ class Ui_MainWindow(object):
         self.tabW_SlidesFirstHalf.setTabText(self.tabW_SlidesFirstHalf.indexOf(self.tab_5), _translate("MainWindow", "Май"))
         self.tabW_SlidesFirstHalf.setTabText(self.tabW_SlidesFirstHalf.indexOf(self.tab_6), _translate("MainWindow", "Июнь"))
         self.btn_Default.setText(_translate("MainWindow", "Сброс"))
-        self.btn_Subject.setText(_translate("MainWindow", "Предметы"))
+        self.btn_Subject.setText(_translate("MainWindow", "Дисциплины"))
         self.btn_Group.setText(_translate("MainWindow", "Группы"))
         self.btn_NewYear.setText(_translate("MainWindow", "Редактировать учебный план"))
         self.btn_Report.setText(_translate("MainWindow", "Отчёт"))
