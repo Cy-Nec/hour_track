@@ -1,6 +1,9 @@
+import calendar
 import sys
 import os
 import configparser
+from datetime import date, timedelta
+
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidgetItem
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
@@ -1315,6 +1318,9 @@ class MainWindow(ThemedWindow):
             (5, "Май"),
             (6, "Июнь")
         ]
+        
+        # Переменная текущего года
+        self.first_half_year = date.today().year
 
         # Подключаем радиокнопки
         self.ui.rBtn_First.toggled.connect(self.on_half_changed)
@@ -1332,31 +1338,44 @@ class MainWindow(ThemedWindow):
         self.ui.blue.triggered.connect(lambda: self.theme_manager.set_theme("blue"))
         self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
 
-        # Apply start theme 
+        # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
 
-        # Connect button "New_Year"
+        # Connect buttons
         if hasattr(self.ui, 'btn_NewYear'):
             self.ui.btn_NewYear.clicked.connect(self.open_new_year_dialog)
-        # Connect button "Filter"
         if hasattr(self.ui, 'btn_Filt'):
             self.ui.btn_Filt.clicked.connect(self.open_filter_dialog)
-        # Connect button "Sort"
         if hasattr(self.ui, 'btn_Sort'):
             self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
-        # Connect button "Report"
         if hasattr(self.ui, 'btn_Report'):
             self.ui.btn_Report.clicked.connect(self.open_report_dialog)
-        # Connect button "Group"
         if hasattr(self.ui, 'btn_Group'):
             self.ui.btn_Group.clicked.connect(self.open_group_dialog)
         if hasattr(self.ui, 'btn_Subject'):
             self.ui.btn_Subject.clicked.connect(self.open_subject_dialog)
+        if hasattr(self.ui, 'btn_Default'):
+            self.ui.btn_Default.clicked.connect(self.on_reset_clicked)
 
-        for i in range(self.ui.tabW_SlidesFirstHalf.count()):
-            table_view = self.ui.tabW_SlidesFirstHalf.widget(i).findChild(QtWidgets.QTableView)
-            if table_view:
-                table_view.verticalHeader().setVisible(False)
+        # Initialize table widgets - hide headers if needed
+        self.initialize_table_widgets()
+
+    def initialize_table_widgets(self):
+        """Initialize properties for all QTableWidget instances."""
+        # Список всех виджетов вкладок и соответствующих table widgets
+        tables_data = [
+            (self.ui.tab_September, self.ui.tableV_hours_1),
+            (self.ui.tab_October, self.ui.tableV_hours_4),
+            (self.ui.tab_November, self.ui.tableV_hours_2),
+            (self.ui.tab_December, self.ui.tableV_hours_3),
+            (self.ui.tab_5, self.ui.tableV_hours_5),
+            (self.ui.tab_6, self.ui.tableV_hours_6),
+        ]
+
+        for tab_widget, table_widget in tables_data:
+            # Example: Hide headers if needed
+            table_widget.verticalHeader().setVisible(False)
+            # table_widget.horizontalHeader().setVisible(False) # Uncomment if you want to hide horizontal headers too
 
     @pyqtSlot(str)
     def on_theme_changed(self, theme: str):
@@ -1365,14 +1384,76 @@ class MainWindow(ThemedWindow):
         self.update_icons()
 
         QTimer.singleShot(0, self.update_table_sizes)
+        
+    def get_half_year_date_range(self, is_first_half: bool = True):
+        """
+        Определяет диапазон дат для первого или второго полугодия текущего учебного года.
+        
+        Args:
+            is_first_half: Если True, возвращает диапазон для первого полугодия (Сент-Дек),
+                          иначе для второго полугодия (Янв-Июнь)
+        
+        Returns:
+            tuple: (start_date, end_date) - кортеж с начальной и конечной датами полугодия
+        """
+        current_year = self.first_half_year
+        
+        if is_first_half:
+            # Первое полугодие: сентябрь-декабрь текущего года
+            start_month, start_label = self.first_half[0]
+            end_month, end_label = self.first_half[-1]
+            
+            start_date = date(current_year, start_month, 1)
+            # Последний день месяца
+            _, last_day = calendar.monthrange(current_year, end_month)
+            end_date = date(current_year, end_month, last_day)
+        else:
+            # Второе полугодие: январь-июнь следующего года (после сентября)
+            # Обычно второе полугодие приходится на следующий календарный год
+            next_year = current_year + 1
+            start_month, start_label = self.second_half[0]
+            end_month, end_label = self.second_half[-1]
+            
+            start_date = date(next_year, start_month, 1)
+            # Последний день месяца
+            _, last_day = calendar.monthrange(next_year, end_month)
+            end_date = date(next_year, end_month, last_day)
+        
+        return start_date, end_date
+
+    def count_weekends_in_half_year(self, is_first_half: bool = True):
+        """
+        Подсчитывает количество выходных дней (воскресений) в указанном полугодии.
+        
+        Args:
+            is_first_half: Если True, подсчитывает для первого полугодия,
+                          иначе для второго полугодия
+        
+        Returns:
+            int: Количество воскресений в указанном полугодии
+        """
+        start_date, end_date = self.get_half_year_date_range(is_first_half)
+        
+        weekend_count = 0
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # weekday() возвращает 6 для воскресенья
+            if current_date.weekday() == 6:
+                weekend_count += 1
+            current_date += timedelta(days=1)
+        
+        return weekend_count
 
     @pyqtSlot()
     def on_half_changed(self):
         """Общий обработчик изменения полугодия"""
         if self.ui.rBtn_First.isChecked():
-            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.first_half)
+            setup_calendar_tables_for_half(self.ui, year=self.first_half_year, months_data=self.first_half)
         elif self.ui.rBtn_Second.isChecked():
-            setup_calendar_tables_for_half(self.ui, year=2025, months_data=self.second_half)
+            # Для второго полугодия используем следующий год
+            next_year = self.first_half_year + 1
+            setup_calendar_tables_for_half(self.ui, year=next_year, months_data=self.second_half)
 
         self.update_table_sizes()
 
@@ -1380,10 +1461,61 @@ class MainWindow(ThemedWindow):
         """Вызывается при переключении вкладки"""
         # Обновляем размеры только для текущей вкладки
         current_tab = self.ui.tabW_SlidesFirstHalf.currentWidget()
-        table_view = current_tab.findChild(QtWidgets.QTableView)
-        if table_view:
-            table_view.resizeColumnsToContents()
-            table_view.updateGeometry()
+        # Find the specific table widget for the current tab
+        table_widget = self.get_table_widget_for_tab(current_tab)
+        if table_widget:
+            table_widget.resizeColumnsToContents()
+            table_widget.resizeRowsToContents()
+            table_widget.updateGeometry()
+
+    def get_table_widget_for_tab(self, tab):
+        """Helper function to get the table widget for a given tab."""
+        # Map tabs to their corresponding table widgets based on the UI setup
+        tab_to_table = {
+            self.ui.tab_September: self.ui.tableV_hours_1,
+            self.ui.tab_October: self.ui.tableV_hours_4,
+            self.ui.tab_November: self.ui.tableV_hours_2,
+            self.ui.tab_December: self.ui.tableV_hours_3,
+            self.ui.tab_5: self.ui.tableV_hours_5,
+            self.ui.tab_6: self.ui.tableV_hours_6,
+        }
+        return tab_to_table.get(tab)
+
+    def update_table_sizes(self):
+        """Обновляет размеры всех QTableWidget в виджетах вкладок"""
+        # Список всех table widgets
+        table_widgets = [
+            self.ui.tableV_hours_1,
+            self.ui.tableV_hours_4,
+            self.ui.tableV_hours_2,
+            self.ui.tableV_hours_3,
+            self.ui.tableV_hours_5,
+            self.ui.tableV_hours_6,
+        ]
+
+        for table_widget in table_widgets:
+            table_widget.resizeColumnsToContents()
+            table_widget.resizeRowsToContents()
+            table_widget.updateGeometry()
+
+    def on_reset_clicked(self):
+        """Handler for the 'Сброс' button."""
+        # Implement reset logic here
+        print("Reset button clicked")
+        # Example: Clear all tables
+        table_widgets = [
+            self.ui.tableV_hours_1,
+            self.ui.tableV_hours_4,
+            self.ui.tableV_hours_2,
+            self.ui.tableV_hours_3,
+            self.ui.tableV_hours_5,
+            self.ui.tableV_hours_6,
+        ]
+        for table_widget in table_widgets:
+            table_widget.setRowCount(0)
+            table_widget.setColumnCount(0)
+        # Re-initialize tables based on current state if needed
+        self.on_half_changed()
 
     def update_icons(self):
         """Update icons when theme switched"""
@@ -1403,21 +1535,6 @@ class MainWindow(ThemedWindow):
             self.ui.btn_Group.setIcon(QIcon(self.theme_manager.get_icon_path("group")))
         if hasattr(self.ui, 'btn_Subject'):
             self.ui.btn_Subject.setIcon(QIcon(self.theme_manager.get_icon_path("subject")))
-    
-    def update_table_sizes(self):
-        """Обновляет размеры всех QTableView в виджетах вкладок"""
-        # Список всех виджетов вкладок
-        tabs = [
-            self.ui.tabW_SlidesFirstHalf.widget(i)
-            for i in range(self.ui.tabW_SlidesFirstHalf.count())
-        ]
-
-        for tab in tabs:
-            # На каждой вкладке ищем QTableView
-            table_view = tab.findChild(QtWidgets.QTableView)
-            if table_view:
-                table_view.resizeColumnsToContents()
-                table_view.updateGeometry()
 
     def open_new_year_dialog(self):
         dialog = YearEditDialog(self.theme_manager)
@@ -1446,6 +1563,7 @@ class MainWindow(ThemedWindow):
     def open_subject_dialog(self):
         dialog = SubjectDialog(self.theme_manager)
         dialog.exec()
+
 
 
 if __name__ == '__main__':
