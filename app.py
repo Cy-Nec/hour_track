@@ -2,13 +2,14 @@ import calendar
 import sys
 import os
 import configparser
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidgetItem
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt, QTimer
 
+from services.work_day_services import WorkDayDAO
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
@@ -1301,6 +1302,9 @@ class MainWindow(ThemedWindow):
         super().__init__(theme_manager)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        
+        self.work_day_dao = WorkDayDAO()
+        self.curriculum_dao = CurriculumDAO()
 
         # "Первое" полугодие = Сент–Дек (4 месяца)
         self.first_half = [
@@ -1359,6 +1363,8 @@ class MainWindow(ThemedWindow):
 
         # Initialize table widgets - hide headers if needed
         self.initialize_table_widgets()
+        
+        QTimer.singleShot(0, self.load_and_display_work_days)
 
     def initialize_table_widgets(self):
         """Initialize properties for all QTableWidget instances."""
@@ -1385,6 +1391,138 @@ class MainWindow(ThemedWindow):
 
         QTimer.singleShot(0, self.update_table_sizes)
         
+    def load_and_display_work_days(self):
+        """Загружает данные из БД и строит таблицы для текущего полугодия/семестра."""
+        print("Загрузка данных рабочих дней и учебных планов...")
+        try:
+            # Получить все записи из БД (для работы с ними)
+            all_work_days = self.work_day_dao.get_all_work_days()
+            print(f"Найдено {len(all_work_days)} записей рабочих дней.")
+
+            # Определить текущий семестр на основе выбранного полугодия
+            current_semester = 1 if self.ui.rBtn_First.isChecked() else 2
+            print(f"Текущий семестр: {current_semester}")
+
+            # Получить все учебные планы для текущего семестра
+            curriculums_for_semester = self.curriculum_dao.get_curriculums_by_semester(current_semester)
+            print(f"Найдено {len(curriculums_for_semester)} учебных планов для семестра {current_semester}.")
+
+            # Создать маппинг между метками месяцев и виджетами таблиц
+            is_first_half = self.ui.rBtn_First.isChecked()
+            current_months_data = self.first_half if is_first_half else self.second_half
+            current_year = self.first_half_year if is_first_half else self.first_half_year + 1
+
+            month_label_to_table = {}
+            if is_first_half:
+                month_label_to_table = {
+                    "Сент": self.ui.tableV_hours_1,
+                    "Окт": self.ui.tableV_hours_4,
+                    "Нояб": self.ui.tableV_hours_2,
+                    "Декаб": self.ui.tableV_hours_3,
+                }
+            else: # Второе полугодие
+                month_label_to_table = {
+                    "Янв": self.ui.tableV_hours_1,
+                    "Фев": self.ui.tableV_hours_4,
+                    "Март": self.ui.tableV_hours_2,
+                    "Апр": self.ui.tableV_hours_3,
+                    "Май": self.ui.tableV_hours_5,
+                    "Июнь": self.ui.tableV_hours_6,
+                }
+
+            # Для каждого месяца в текущем полугодии
+            for month_num, month_label in current_months_data:
+                table_widget = month_label_to_table.get(month_label)
+                if not table_widget:
+                    continue # Пропускаем, если таблица не найдена
+
+                # Очистить таблицу перед заполнением
+                table_widget.setRowCount(0)
+                table_widget.setColumnCount(0)
+
+                # Создать список дней месяца (для шапки)
+                days_in_month = calendar.monthrange(current_year, month_num)[1]
+                day_list = [f"{day:02d}" for day in range(1, days_in_month + 1)] 
+
+                # Установить заголовки столбцов: Группа, Предмет, Дни месяца
+                headers = ["Группа", "Предмет"] + day_list
+                table_widget.setColumnCount(len(headers))
+                table_widget.setHorizontalHeaderLabels(headers)
+
+                # Заполнить строки данными из учебных планов
+                for curriculum in curriculums_for_semester:
+                    group_name = curriculum[3]  # group_name
+                    subject_name = curriculum[4] # subject_name
+
+                    # Добавить новую строку
+                    row_position = table_widget.rowCount() 
+                    table_widget.insertRow(row_position)
+
+                    item_group = QTableWidgetItem(group_name)
+                    table_widget.setItem(row_position, 0, item_group)
+
+                    item_subject = QTableWidgetItem(subject_name)
+                    table_widget.setItem(row_position, 1, item_subject)
+                    print(f"  Добавляем строку для Группа='{group_name}', Предмет='{subject_name}' на позицию {row_position}")
+
+                    for col_index, day_str in enumerate(day_list, start=2): 
+                        target_date = date(current_year, month_num, int(day_str)) 
+
+                        # Найти запись workDay для этой группы, предмета и даты
+                        found_hours = None
+                        for wd in all_work_days:
+                            wd_date = datetime.strptime(wd[1], "%Y-%m-%d").date()
+                            wd_subject = wd[2]
+                            wd_group = wd[3]
+                            wd_semester = wd[4]
+
+                            if (wd_group == group_name and
+                                wd_subject == subject_name and
+                                wd_date == target_date and
+                                wd_semester == current_semester):
+                                found_hours = wd[5] 
+                                break
+
+                        item_hours = QTableWidgetItem(str(found_hours) if found_hours is not None else "")
+                        table_widget.setItem(row_position, col_index, item_hours)
+
+                # После заполнения всех строк обновить размеры
+                table_widget.resizeColumnsToContents()
+                table_widget.resizeRowsToContents()
+
+        except Exception as e:
+            print(f"Ошибка при загрузке данных: {e}")
+            return
+
+        # После загрузки всех данных обновите размеры таблиц
+        self.update_table_sizes()
+        print("Данные успешно загружены и отображены.")
+
+    def add_record_to_table(self, table_widget, record):
+        """Добавляет одну запись в указанную таблицу."""
+        # record - это кортеж (id, date, subject_name, group_name, semester, hours)
+        row_position = table_widget.rowCount()
+        table_widget.insertRow(row_position)
+        
+        # Заполняем ячейки данными из кортежа
+        for col_index, data in enumerate(record):
+            item = QTableWidgetItem(str(data)) # Преобразуем всё к строке для простоты
+            table_widget.setItem(row_position, col_index, item)
+
+    def clear_all_tables(self):
+        """Очищает все таблицы."""
+        table_widgets = [
+            self.ui.tableV_hours_1,
+            self.ui.tableV_hours_4,
+            self.ui.tableV_hours_2,
+            self.ui.tableV_hours_3,
+            self.ui.tableV_hours_5,
+            self.ui.tableV_hours_6,
+        ]
+        for table_widget in table_widgets:
+            table_widget.setRowCount(0)
+        print("Все таблицы очищены.")
+        
     def get_half_year_date_range(self, is_first_half: bool = True):
         """
         Определяет диапазон дат для первого или второго полугодия текущего учебного года.
@@ -1408,8 +1546,6 @@ class MainWindow(ThemedWindow):
             _, last_day = calendar.monthrange(current_year, end_month)
             end_date = date(current_year, end_month, last_day)
         else:
-            # Второе полугодие: январь-июнь следующего года (после сентября)
-            # Обычно второе полугодие приходится на следующий календарный год
             next_year = current_year + 1
             start_month, start_label = self.second_half[0]
             end_month, end_label = self.second_half[-1]
@@ -1456,6 +1592,7 @@ class MainWindow(ThemedWindow):
             setup_calendar_tables_for_half(self.ui, year=next_year, months_data=self.second_half)
 
         self.update_table_sizes()
+        QTimer.singleShot(0, self.load_and_display_work_days)
 
     def on_tab_changed(self, index):
         """Вызывается при переключении вкладки"""
@@ -1467,6 +1604,8 @@ class MainWindow(ThemedWindow):
             table_widget.resizeColumnsToContents()
             table_widget.resizeRowsToContents()
             table_widget.updateGeometry()
+        
+        QTimer.singleShot(0, self.load_and_display_work_days)
 
     def get_table_widget_for_tab(self, tab):
         """Helper function to get the table widget for a given tab."""
