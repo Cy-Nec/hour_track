@@ -4,7 +4,7 @@ import os
 import configparser
 from datetime import date, datetime, timedelta
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidgetItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidget, QTableWidgetItem
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt, QTimer
@@ -19,7 +19,7 @@ from ui.reportDialog import Ui_Dialog_Report
 from ui.groupDialog import Ui_Dialog_Group
 from ui.YearEditDialog import Ui_Dialog_YearEdit
 from ui.subjectDialog import Ui_Dialog_Subject
-from calendar_helper import setup_calendar_tables_for_half
+from calendar_helper import CalendarTableData, setup_calendar_tables_for_half
 
 from services.group_services import GroupDAO
 from services.curriculum_services import CurriculumDAO
@@ -1305,6 +1305,8 @@ class MainWindow(ThemedWindow):
         
         self.work_day_dao = WorkDayDAO()
         self.curriculum_dao = CurriculumDAO()
+        
+        self.table_date_mapping = {} # Добавьте эту строку
 
         # "Первое" полугодие = Сент–Дек (4 месяца)
         self.first_half = [
@@ -1364,6 +1366,9 @@ class MainWindow(ThemedWindow):
         # Initialize table widgets - hide headers if needed
         self.initialize_table_widgets()
         
+        # Подключаем обработчики сигналов для таблиц
+        self.setup_table_connections()
+        
         QTimer.singleShot(0, self.load_and_display_work_days)
 
     def initialize_table_widgets(self):
@@ -1393,42 +1398,33 @@ class MainWindow(ThemedWindow):
         
     def load_and_display_work_days(self):
         """Загружает данные из БД и строит таблицы для текущего полугодия/семестра."""
-        print("Загрузка данных рабочих дней и учебных планов...")
+        # print("Загрузка данных рабочих дней и учебных планов...")
         try:
             # Получить все записи из БД (для работы с ними)
             all_work_days = self.work_day_dao.get_all_work_days()
-            print(f"Найдено {len(all_work_days)} записей рабочих дней.")
+            # print(f"Найдено {len(all_work_days)} записей рабочих дней.")
 
             # Определить текущий семестр на основе выбранного полугодия
             current_semester = 1 if self.ui.rBtn_First.isChecked() else 2
-            print(f"Текущий семестр: {current_semester}")
+            # print(f"Текущий семестр: {current_semester}")
 
             # Получить все учебные планы для текущего семестра
             curriculums_for_semester = self.curriculum_dao.get_curriculums_by_semester(current_semester)
-            print(f"Найдено {len(curriculums_for_semester)} учебных планов для семестра {current_semester}.")
+            # print(f"Найдено {len(curriculums_for_semester)} учебных планов для семестра {current_semester}.")
 
             # Создать маппинг между метками месяцев и виджетами таблиц
             is_first_half = self.ui.rBtn_First.isChecked()
             current_months_data = self.first_half if is_first_half else self.second_half
             current_year = self.first_half_year if is_first_half else self.first_half_year + 1
 
-            month_label_to_table = {}
-            if is_first_half:
-                month_label_to_table = {
-                    "Сент": self.ui.tableV_hours_1,
-                    "Окт": self.ui.tableV_hours_4,
-                    "Нояб": self.ui.tableV_hours_2,
-                    "Декаб": self.ui.tableV_hours_3,
-                }
-            else: # Второе полугодие
-                month_label_to_table = {
-                    "Янв": self.ui.tableV_hours_1,
-                    "Фев": self.ui.tableV_hours_4,
-                    "Март": self.ui.tableV_hours_2,
-                    "Апр": self.ui.tableV_hours_3,
-                    "Май": self.ui.tableV_hours_5,
-                    "Июнь": self.ui.tableV_hours_6,
-                }
+            month_label_to_table = self.get_month_label_to_table_map() # Используем метод, определенный ниже
+            
+            table_widgets_to_load = []
+            for month_label in [label for num, label in current_months_data]:
+                table_widget = month_label_to_table.get(month_label)
+                if table_widget:
+                    table_widget.blockSignals(True) # Блокируем сигналы
+                    table_widgets_to_load.append(table_widget)
 
             # Для каждого месяца в текущем полугодии
             for month_num, month_label in current_months_data:
@@ -1440,11 +1436,15 @@ class MainWindow(ThemedWindow):
                 table_widget.setRowCount(0)
                 table_widget.setColumnCount(0)
 
-                # Создать список дней месяца (для шапки)
-                days_in_month = calendar.monthrange(current_year, month_num)[1]
-                day_list = [f"{day:02d}" for day in range(1, days_in_month + 1)] 
+                # Создаем объект данных для календаря
+                calendar_data = CalendarTableData(current_year, month_num)
+                # Сохраняем mapping дат для этой таблицы
+                self.table_date_mapping[table_widget] = calendar_data.dates
 
-                # Установить заголовки столбцов: Группа, Предмет, Дни месяца
+                # Создать список дней месяца (для шапки) - только не-воскресенья
+                day_list = [dt.strftime("%d") for dt in calendar_data.dates] # Берем из отфильтрованного списка
+
+                # Установить заголовки столбцов: Группа, Предмет, Дни месяца (без воскресений)
                 headers = ["Группа", "Предмет"] + day_list
                 table_widget.setColumnCount(len(headers))
                 table_widget.setHorizontalHeaderLabels(headers)
@@ -1455,7 +1455,7 @@ class MainWindow(ThemedWindow):
                     subject_name = curriculum[4] # subject_name
 
                     # Добавить новую строку
-                    row_position = table_widget.rowCount() 
+                    row_position = table_widget.rowCount()
                     table_widget.insertRow(row_position)
 
                     item_group = QTableWidgetItem(group_name)
@@ -1463,11 +1463,9 @@ class MainWindow(ThemedWindow):
 
                     item_subject = QTableWidgetItem(subject_name)
                     table_widget.setItem(row_position, 1, item_subject)
-                    print(f"  Добавляем строку для Группа='{group_name}', Предмет='{subject_name}' на позицию {row_position}")
+                    # print(f"  Добавляем строку для Группа='{group_name}', Предмет='{subject_name}' на позицию {row_position}")
 
-                    for col_index, day_str in enumerate(day_list, start=2): 
-                        target_date = date(current_year, month_num, int(day_str)) 
-
+                    for col_index, target_date in enumerate(calendar_data.dates, start=2): # Перебираем даты, а не строки
                         # Найти запись workDay для этой группы, предмета и даты
                         found_hours = None
                         for wd in all_work_days:
@@ -1478,9 +1476,9 @@ class MainWindow(ThemedWindow):
 
                             if (wd_group == group_name and
                                 wd_subject == subject_name and
-                                wd_date == target_date and
+                                wd_date == target_date and # Сравниваем с target_date из calendar_data.dates
                                 wd_semester == current_semester):
-                                found_hours = wd[5] 
+                                found_hours = wd[5]
                                 break
 
                         item_hours = QTableWidgetItem(str(found_hours) if found_hours is not None else "")
@@ -1489,6 +1487,9 @@ class MainWindow(ThemedWindow):
                 # После заполнения всех строк обновить размеры
                 table_widget.resizeColumnsToContents()
                 table_widget.resizeRowsToContents()
+            
+            for table_widget in table_widgets_to_load:
+                table_widget.blockSignals(False) # Разблокируем сигналы
 
         except Exception as e:
             print(f"Ошибка при загрузке данных: {e}")
@@ -1496,8 +1497,8 @@ class MainWindow(ThemedWindow):
 
         # После загрузки всех данных обновите размеры таблиц
         self.update_table_sizes()
-        print("Данные успешно загружены и отображены.")
-
+        # print("Данные успешно загружены и отображены.")
+        
     def add_record_to_table(self, table_widget, record):
         """Добавляет одну запись в указанную таблицу."""
         # record - это кортеж (id, date, subject_name, group_name, semester, hours)
@@ -1521,7 +1522,7 @@ class MainWindow(ThemedWindow):
         ]
         for table_widget in table_widgets:
             table_widget.setRowCount(0)
-        print("Все таблицы очищены.")
+        # print("Все таблицы очищены.")
         
     def get_half_year_date_range(self, is_first_half: bool = True):
         """
@@ -1619,6 +1620,26 @@ class MainWindow(ThemedWindow):
             self.ui.tab_6: self.ui.tableV_hours_6,
         }
         return tab_to_table.get(tab)
+    
+    def get_month_label_to_table_map(self):
+        """Возвращает словарь соответствия меток месяцев виджетам таблиц."""
+        is_first_half = self.ui.rBtn_First.isChecked()
+        if is_first_half:
+            return {
+                "Сент": self.ui.tableV_hours_1,
+                "Окт": self.ui.tableV_hours_4,
+                "Нояб": self.ui.tableV_hours_2,
+                "Декаб": self.ui.tableV_hours_3,
+            }
+        else: # Второе полугодие
+            return {
+                "Янв": self.ui.tableV_hours_1,
+                "Фев": self.ui.tableV_hours_4,
+                "Март": self.ui.tableV_hours_2,
+                "Апр": self.ui.tableV_hours_3,
+                "Май": self.ui.tableV_hours_5,
+                "Июнь": self.ui.tableV_hours_6,
+            }
 
     def update_table_sizes(self):
         """Обновляет размеры всех QTableWidget в виджетах вкладок"""
@@ -1636,11 +1657,157 @@ class MainWindow(ThemedWindow):
             table_widget.resizeColumnsToContents()
             table_widget.resizeRowsToContents()
             table_widget.updateGeometry()
+            
+    def setup_table_connections(self):
+        """Подключает сигнал cellChanged ко всем таблицам."""
+        table_widgets = [
+            self.ui.tableV_hours_1,
+            self.ui.tableV_hours_4,
+            self.ui.tableV_hours_2,
+            self.ui.tableV_hours_3,
+            self.ui.tableV_hours_5,
+            self.ui.tableV_hours_6,
+        ]
+
+        for table_widget in table_widgets:
+            # Подключаем сигнал к общему обработчику
+            table_widget.cellChanged.connect(self.on_cell_changed)
+    
+    def on_cell_changed(self, row, col):
+        """Обработчик изменения ячейки в любой таблице."""
+        sender = self.sender() # Получаем QTableWidget, который вызвал сигнал
+
+        if not isinstance(sender, QTableWidget):
+            # print(f"on_cell_changed вызван не для QTableWidget, а для {type(sender)}. Игнорируем.")
+            return
+
+        # Проверяем, что изменение произошло не в первых двух столбцах (Группа, Предмет)
+        if col < 2:
+            return
+
+        # Получаем текст из ячейки
+        item = sender.item(row, col)
+        if item is None:
+            new_text = ""
+        else:
+            new_text = item.text().strip()
+
+        # Получаем список дат для текущей таблицы
+        if sender not in self.table_date_mapping:
+            # print("Ошибка: Не найдены даты для таблицы.")
+            self.show_error_message("Произошла ошибка при обработке данных.")
+            return
+
+        filtered_dates = self.table_date_mapping[sender]
+        date_index = col - 2
+        if date_index < 0 or date_index >= len(filtered_dates):
+            #  print(f"Ошибка: Индекс столбца {col} вне диапазона отфильтрованных дат.")
+             self.show_error_message("Произошла ошибка при обработке данных.")
+             return
+
+        target_date = filtered_dates[date_index]
+
+        # Определяем семестр
+        is_first_half = self.ui.rBtn_First.isChecked()
+        current_semester = 1 if is_first_half else 2
+
+        # Получаем группу и предмет из строки
+        item_group = sender.item(row, 0)
+        item_subject = sender.item(row, 1)
+
+        if item_group is None or item_subject is None:
+            # print(f"Ошибка: Не найдены данные группы или предмета для строки {row}.")
+            self.show_error_message("Произошла ошибка при обработке данных.")
+            return
+
+        group_name = item_group.text().strip()
+        subject_name = item_subject.text().strip()
+
+        if not group_name or not subject_name:
+            # print(f"Ошибка: Пустые данные группы ('{group_name}') или предмета ('{subject_name}') для строки {row}.")
+            self.show_error_message("Группа или предмет не могут быть пустыми.")
+            return
+
+        # Валидация числового значения
+        if new_text == "":
+            # Если строка пустая, удалим запись из БД (если она была)
+            try:
+                # Найдем id существующей записи (если есть)
+                existing_records = self.work_day_dao.get_work_days_by_date(target_date)
+                for record in existing_records:
+                    if record[3] == group_name and record[2] == subject_name and record[4] == current_semester:
+                        self.work_day_dao.delete_work_day(record[0])
+                        # print(f"Удалена запись для {group_name}, {subject_name}, {target_date} (пустое значение).")
+                        break
+            except Exception as e:
+                # print(f"Ошибка при удалении записи из БД: {e}")
+                self.show_error_message(f"Ошибка при удалении данных: {e}")
+            return # Завершаем обработку, если значение пустое
+
+        try:
+            hours_float = float(new_text) # Позволим вводить дробные числа
+            if hours_float < 0:
+                raise ValueError("Часы не могут быть отрицательными.")
+        except ValueError:
+            # Значение не является числом или отрицательное
+            # print(f"Неверный формат часов: '{new_text}'. Сбрасываем значение.")
+            # Восстановим предыдущее значение (или пустую строку), показав сообщение об ошибке
+            item.setText("") # Сбросим значение в ячейке
+            self.show_error_message("Значение должно быть числом (часы).")
+            return
+
+        # Теперь мы готовы обновить/вставить запись в БД
+        try:
+            # Проверим, существует ли уже запись для этой даты, группы, предмета и семестра
+            existing_records = self.work_day_dao.get_work_days_by_date(target_date)
+            found_existing = False
+            for record in existing_records:
+                if record[3] == group_name and record[2] == subject_name and record[4] == current_semester:
+                    # Обновляем существующую запись
+                    updated_record = self.work_day_dao.update_work_day(
+                        record[0], # id
+                        date=target_date.isoformat(),
+                        subject_name=subject_name,
+                        group_name=group_name,
+                        semester=current_semester,
+                        hours=hours_float
+                    )
+                    if updated_record:
+                        print(f"Обновлена запись: {updated_record}")
+                    else:
+                        print(f"Не удалось обновить запись с id {record[0]}")
+                    found_existing = True
+                    break
+
+            if not found_existing:
+                # Вставляем новую запись
+                new_record = self.work_day_dao.create_work_day(
+                    date=target_date.isoformat(),
+                    subject_name=subject_name,
+                    group_name=group_name,
+                    semester=current_semester,
+                    hours=hours_float
+                )
+                if new_record:
+                    print(f"Создана новая запись: {new_record}")
+                else:
+                    print("Не удалось создать новую запись.")
+        except Exception as e:
+            print(f"Ошибка при обновлении/вставке записи в БД: {e}")
+            self.show_error_message(f"Ошибка при сохранении данных: {e}")
+
+    def show_error_message(self, message):
+        """Показывает окно с сообщением об ошибке."""
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Critical) # Иконка ошибки
+        msg_box.setWindowTitle("Ошибка")
+        msg_box.setText(message)
+        msg_box.exec() # Показать модально
 
     def on_reset_clicked(self):
         """Handler for the 'Сброс' button."""
         # Implement reset logic here
-        print("Reset button clicked")
+        # print("Reset button clicked")
         # Example: Clear all tables
         table_widgets = [
             self.ui.tableV_hours_1,
