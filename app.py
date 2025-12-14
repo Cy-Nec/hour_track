@@ -1255,24 +1255,88 @@ class NewYearDialog(ThemedDialog):
 
 # === FilterDialog ===
 class FilterDialog(ThemedDialog):
-    def __init__(self, theme_manager: ThemeManager):
+    def __init__(self, theme_manager: ThemeManager, curriculum_dao, initial_selected_groups=None, initial_selected_subjects=None):
         super().__init__(theme_manager)
         self.ui = Ui_Dialog_Filter()
         self.ui.setupUi(self)
 
+        # Сохраняем DAO для получения данных
+        self.curriculum_dao = curriculum_dao
+
+        # Сохраняем изначально выбранные значения для восстановления
+        self.initial_selected_groups = initial_selected_groups or set()
+        self.initial_selected_subjects = initial_selected_subjects or set()
+
+        # Атрибуты для хранения выбранных значений при закрытии
+        self.selected_groups = set()
+        self.selected_subjects = set()
+
+        # Подключаем кнопки
+        self.ui.btn_Cancel.clicked.connect(self.reject)
+        self.ui.btn_Accept.clicked.connect(self.on_accept_clicked)
+
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
 
+        # Загружаем данные и восстанавливаем выбор
+        self.load_filter_data()
+        self.restore_selection()
 
-# === SortDialog ===
-class SortDialog(ThemedDialog):
-    def __init__(self, theme_manager: ThemeManager):
-        super().__init__(theme_manager)
-        self.ui = Ui_Dialog_Sort()
-        self.ui.setupUi(self)
+    def load_filter_data(self):
+        """Загружает все уникальные группы и предметы в списки."""
+        try:
+            all_curriculums = self.curriculum_dao.get_all_curriculums()
 
-        # Apply start theme
-        self.on_theme_changed(self.theme_manager.get_theme())
+            groups = set()
+            subjects = set()
+            for curriculum in all_curriculums:
+                groups.add(curriculum[3]) # group_name
+                subjects.add(curriculum[4]) # subject_name
+
+            sorted_groups = sorted(list(groups))
+            sorted_subjects = sorted(list(subjects))
+
+            # Заполняем списки
+            self.ui.listW_groups.clear()
+            for group_name in sorted_groups:
+                item = QListWidgetItem(group_name)
+                # item.setCheckState(QtCore.Qt.CheckState.Unchecked) # Больше не нужно
+                self.ui.listW_groups.addItem(item)
+
+            self.ui.listW_groups_2.clear()
+            for subject_name in sorted_subjects:
+                item = QListWidgetItem(subject_name)
+                # item.setCheckState(QtCore.Qt.CheckState.Unchecked) # Больше не нужно
+                self.ui.listW_groups_2.addItem(item)
+
+        except Exception as e:
+            print(f"Ошибка при загрузке данных для фильтра: {e}")
+
+    def restore_selection(self):
+        """Восстанавливает выбранные элементы в списках."""
+        # Выбираем элементы в списке групп
+        for i in range(self.ui.listW_groups.count()):
+            item = self.ui.listW_groups.item(i)
+            if item.text() in self.initial_selected_groups:
+                item.setSelected(True)
+
+        # Выбираем элементы в списке предметов
+        for i in range(self.ui.listW_groups_2.count()):
+            item = self.ui.listW_groups_2.item(i)
+            if item.text() in self.initial_selected_subjects:
+                item.setSelected(True)
+
+    def on_accept_clicked(self):
+        """Обработчик нажатия кнопки 'Фильтровать'."""
+        # Собираем выбранные элементы
+        self.selected_groups = {item.text() for item in self.ui.listW_groups.selectedItems()}
+        self.selected_subjects = {item.text() for item in self.ui.listW_groups_2.selectedItems()}
+
+        print(f"Выбраны группы: {self.selected_groups}")
+        print(f"Выбраны предметы: {self.selected_subjects}")
+
+        self.accept()
+
 
 
 # === about ===
@@ -1305,6 +1369,9 @@ class MainWindow(ThemedWindow):
         
         self.work_day_dao = WorkDayDAO()
         self.curriculum_dao = CurriculumDAO()
+        
+        self.current_group_filter = set() # Изначально пустой фильтр
+        self.current_subject_filter = set() # Изначально пустой фильтр
         
         self.table_date_mapping = {} # Добавьте эту строку
 
@@ -1362,6 +1429,8 @@ class MainWindow(ThemedWindow):
             self.ui.btn_Subject.clicked.connect(self.open_subject_dialog)
         if hasattr(self.ui, 'btn_Default'):
             self.ui.btn_Default.clicked.connect(self.on_reset_clicked)
+        if hasattr(self.ui, 'btn_Search'):
+            self.ui.btn_Search.clicked.connect(self.on_search_clicked)
 
         # Initialize table widgets - hide headers if needed
         self.initialize_table_widgets()
@@ -1411,6 +1480,19 @@ class MainWindow(ThemedWindow):
             # Получить все учебные планы для текущего семестра
             curriculums_for_semester = self.curriculum_dao.get_curriculums_by_semester(current_semester)
             # print(f"Найдено {len(curriculums_for_semester)} учебных планов для семестра {current_semester}.")
+            
+            if self.current_group_filter or self.current_subject_filter:
+                filtered_curriculums = []
+                for curriculum in curriculums_for_semester:
+                    group_name = curriculum[3]
+                    subject_name = curriculum[4]
+                    # Проверяем, проходит ли запись фильтр
+                    group_ok = not self.current_group_filter or group_name in self.current_group_filter
+                    subject_ok = not self.current_subject_filter or subject_name in self.current_subject_filter
+                    if group_ok and subject_ok:
+                        filtered_curriculums.append(curriculum)
+                curriculums_for_semester = filtered_curriculums
+                print(f"После фильтрации осталось {len(curriculums_for_semester)} учебных планов.")
 
             # Создать маппинг между метками месяцев и виджетами таблиц
             is_first_half = self.ui.rBtn_First.isChecked()
@@ -1593,6 +1675,7 @@ class MainWindow(ThemedWindow):
             setup_calendar_tables_for_half(self.ui, year=next_year, months_data=self.second_half)
 
         self.update_table_sizes()
+        self.ui.line_Search.clear()
         QTimer.singleShot(0, self.load_and_display_work_days)
 
     def on_tab_changed(self, index):
@@ -1620,6 +1703,12 @@ class MainWindow(ThemedWindow):
             self.ui.tab_6: self.ui.tableV_hours_6,
         }
         return tab_to_table.get(tab)
+    
+    def on_search_clicked(self):
+        """Обработчик нажатия кнопки поиска."""
+        search_text = self.ui.line_Search.text().strip().lower() 
+        print(f"Поиск по запросу: '{search_text}'")
+        self.apply_search_filter(search_text)
     
     def get_month_label_to_table_map(self):
         """Возвращает словарь соответствия меток месяцев виджетам таблиц."""
@@ -1657,6 +1746,56 @@ class MainWindow(ThemedWindow):
             table_widget.resizeColumnsToContents()
             table_widget.resizeRowsToContents()
             table_widget.updateGeometry()
+            
+    def apply_search_filter(self, search_text: str):
+        """
+        Применяет фильтр поиска к строкам таблиц.
+        Скрывает строки, не содержащие search_text.
+        """
+        # Получаем список таблиц для текущего полугодия (аналогично load_and_display_work_days)
+        is_first_half = self.ui.rBtn_First.isChecked()
+        current_months_data = self.first_half if is_first_half else self.second_half
+        # current_year = self.first_half_year if is_first_half else self.first_half_year + 1 # Не нужен тут
+
+        month_label_to_table = self.get_month_label_to_table_map()
+
+        # Проходим по всем таблицам, соответствующим текущему полугодию
+        for month_label in [label for num, label in current_months_data]:
+            table_widget = month_label_to_table.get(month_label)
+            if not table_widget:
+                continue
+
+            # Проходим по всем строкам в таблице
+            for row in range(table_widget.rowCount()):
+                # Получаем данные из первых двух столбцов (Группа, Предмет)
+                item_group = table_widget.item(row, 0)
+                item_subject = table_widget.item(row, 1)
+
+                group_text = item_group.text().lower() if item_group else ""
+                subject_text = item_subject.text().lower() if item_subject else ""
+
+                # Поиск по группе или предмету
+                if search_text in group_text or search_text in subject_text:
+                    table_widget.showRow(row) # Показываем строку, если совпадение найдено
+                    continue # Переходим к следующей строке
+
+                # Поиск по часам (данные в столбцах с 2 и далее)
+                found_in_hours = False
+                for col in range(2, table_widget.columnCount()):
+                    item_hours = table_widget.item(row, col)
+                    if item_hours:
+                        hours_text = item_hours.text().lower()
+                        if search_text in hours_text:
+                             found_in_hours = True
+                             break # Нашли совпадение в одном из столбцов часов, выходим из цикла по столбцам
+
+                if found_in_hours:
+                    table_widget.showRow(row) # Показываем строку, если совпадение найдено в часах
+                else:
+                    table_widget.hideRow(row) # Скрываем строку, если совпадений не найдено
+
+        # После фильтрации может потребоваться обновить размеры
+        self.update_table_sizes()
             
     def setup_table_connections(self):
         """Подключает сигнал cellChanged ко всем таблицам."""
@@ -1715,24 +1854,21 @@ class MainWindow(ThemedWindow):
         item_group = sender.item(row, 0)
         item_subject = sender.item(row, 1)
 
+        # Проверяем, существуют ли ячейки и содержат ли они непустой текст
         if item_group is None or item_subject is None:
-            # print(f"Ошибка: Не найдены данные группы или предмета для строки {row}.")
-            self.show_error_message("Произошла ошибка при обработке данных.")
+            # print(f"Предупреждение: Ячейки группы или предмета для строки {row} отсутствуют или пусты. Игнорируем изменение в ячейке {col}.")
             return
 
         group_name = item_group.text().strip()
         subject_name = item_subject.text().strip()
 
         if not group_name or not subject_name:
-            # print(f"Ошибка: Пустые данные группы ('{group_name}') или предмета ('{subject_name}') для строки {row}.")
-            self.show_error_message("Группа или предмет не могут быть пустыми.")
+            # print(f"Предупреждение: Пустые данные группы ('{group_name}') или предмета ('{subject_name}') для строки {row}. Игнорируем изменение в ячейке {col}.")
             return
 
         # Валидация числового значения
         if new_text == "":
-            # Если строка пустая, удалим запись из БД (если она была)
             try:
-                # Найдем id существующей записи (если есть)
                 existing_records = self.work_day_dao.get_work_days_by_date(target_date)
                 for record in existing_records:
                     if record[3] == group_name and record[2] == subject_name and record[4] == current_semester:
@@ -1806,21 +1942,21 @@ class MainWindow(ThemedWindow):
 
     def on_reset_clicked(self):
         """Handler for the 'Сброс' button."""
-        # Implement reset logic here
-        # print("Reset button clicked")
-        # Example: Clear all tables
-        table_widgets = [
-            self.ui.tableV_hours_1,
-            self.ui.tableV_hours_4,
-            self.ui.tableV_hours_2,
-            self.ui.tableV_hours_3,
-            self.ui.tableV_hours_5,
-            self.ui.tableV_hours_6,
-        ]
-        for table_widget in table_widgets:
-            table_widget.setRowCount(0)
-            table_widget.setColumnCount(0)
-        # Re-initialize tables based on current state if needed
+        print("Сброс фильтров и поиска.")
+        # Сброс фильтров по группам и предметам
+        self.current_group_filter = set()
+        self.current_subject_filter = set()
+        print(f"Фильтры сброшены: Группы={self.current_group_filter}, Предметы={self.current_subject_filter}")
+
+        # Сброс строки поиска
+        self.ui.line_Search.clear()
+        print("Строка поиска очищена.")
+
+        # Сброс фильтра поиска (скрытые строки)
+        self.ui.line_Search.clear()
+
+        # Перезагрузка данных с учетом сброшенных фильтров
+        # on_half_changed() пересоздаст структуру таблиц и вызовет load_and_display_work_days
         self.on_half_changed()
 
     def update_icons(self):
@@ -1829,8 +1965,6 @@ class MainWindow(ThemedWindow):
             self.ui.btn_Search.setIcon(QIcon(self.theme_manager.get_icon_path("search")))
         if hasattr(self.ui, 'btn_Filt'):
             self.ui.btn_Filt.setIcon(QIcon(self.theme_manager.get_icon_path("filter")))
-        if hasattr(self.ui, 'btn_Sort'):
-            self.ui.btn_Sort.setIcon(QIcon(self.theme_manager.get_icon_path("sort")))
         if hasattr(self.ui, 'btn_Report'):
             self.ui.btn_Report.setIcon(QIcon(self.theme_manager.get_icon_path("report")))
         if hasattr(self.ui, 'btn_NewYear'):
@@ -1847,12 +1981,20 @@ class MainWindow(ThemedWindow):
         dialog.exec()
 
     def open_filter_dialog(self):
-        dialog = FilterDialog(self.theme_manager)
-        dialog.exec()
-
-    def open_sort_dialog(self):
-        dialog = SortDialog(self.theme_manager)
-        dialog.exec()
+        dialog = FilterDialog(
+            self.theme_manager,
+            self.curriculum_dao,
+            initial_selected_groups=self.current_group_filter, # Передаем текущие фильтры
+            initial_selected_subjects=self.current_subject_filter
+        )
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            # Сохраняем новые фильтры
+            self.current_group_filter = dialog.selected_groups.copy()
+            self.current_subject_filter = dialog.selected_subjects.copy()
+            print(f"Фильтры обновлены в MainWindow: Группы={self.current_group_filter}, Предметы={self.current_subject_filter}")
+            # Перезагружаем данные с учетом фильтров
+            QTimer.singleShot(0, self.load_and_display_work_days)
+        # Если пользователь нажал "Отменить", фильтры остаются неизменными
 
     def open_report_dialog(self):
         dialog = ReportDialog(self.theme_manager)

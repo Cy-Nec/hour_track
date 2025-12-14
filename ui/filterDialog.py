@@ -73,7 +73,7 @@ class Ui_Dialog_Filter(object):
         Dialog_Filter.setWindowTitle(_translate("Dialog_Filter", "Фильтры"))
         self.label1.setText(_translate("Dialog_Filter", "Группы"))
         self.listW_groups.setSortingEnabled(True)
-        self.label2.setText(_translate("Dialog_Filter", "Предметы"))
+        self.label2.setText(_translate("Dialog_Filter", "Дисциплины"))
         self.listW_groups_2.setSortingEnabled(True)
         self.btn_Cancel.setText(_translate("Dialog_Filter", "Отменить"))
         self.btn_Accept.setText(_translate("Dialog_Filter", "Фильтровать"))

@@ -38,7 +38,7 @@
     <number>3</number>
    </property>
    <item row="0" column="0">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QLabel" name="label1">
@@ -67,12 +67,12 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QLabel" name="label2">
         <property name="text">
-         <string>Предметы</string>
+         <string>Дисциплины</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -96,7 +96,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="btn_Cancel">

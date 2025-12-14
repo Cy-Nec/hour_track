@@ -184,49 +184,6 @@
       </widget>
      </widget>
     </item>
-    <item row="5" column="1">
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="4" column="1" colspan="2">
-     <widget class="QPushButton" name="btn_Default">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>30</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Сброс</string>
-      </property>
-      <property name="iconSize">
-       <size>
-        <width>24</width>
-        <height>24</height>
-       </size>
-      </property>
-     </widget>
-    </item>
     <item row="6" column="1" colspan="2">
      <widget class="QFrame" name="control_frame">
       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
@@ -386,7 +343,13 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="btn_Sort">
+        <widget class="QPushButton" name="btn_Default">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>60</width>
@@ -399,7 +362,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Сортировка</string>
+          <string>Сброс</string>
          </property>
          <property name="iconSize">
           <size>
@@ -548,6 +511,19 @@
        </property>
       </widget>
      </widget>
+    </item>
+    <item row="5" column="1" colspan="2">
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
     </item>
    </layout>
   </widget>
