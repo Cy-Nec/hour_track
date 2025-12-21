@@ -540,7 +540,8 @@
     <property name="title">
      <string>Файл</string>
     </property>
-    <addaction name="open"/>
+    <addaction name="create_file"/>
+    <addaction name="open_file"/>
     <addaction name="separator"/>
     <addaction name="report"/>
    </widget>
@@ -557,6 +558,7 @@
      <string>Справка</string>
     </property>
     <addaction name="about"/>
+    <addaction name="about_start"/>
    </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_theme"/>
@@ -572,7 +574,7 @@
     <string>Тёмная</string>
    </property>
   </action>
-  <action name="open">
+  <action name="open_file">
    <property name="text">
     <string>Открыть</string>
    </property>
@@ -590,6 +592,16 @@
   <action name="blue">
    <property name="text">
     <string>Синяя</string>
+   </property>
+  </action>
+  <action name="about_start">
+   <property name="text">
+    <string>Начало работы</string>
+   </property>
+  </action>
+  <action name="create_file">
+   <property name="text">
+    <string>Создать</string>
    </property>
   </action>
  </widget>

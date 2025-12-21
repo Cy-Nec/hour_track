@@ -1,10 +1,14 @@
 import calendar
+from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 import sys
 import os
 import configparser
 from datetime import date, datetime, timedelta
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidget, QListWidgetItem, QCompleter, QHeaderView, QTableWidget, QTableWidgetItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidgetItem, QCompleter, QHeaderView, QTableWidget, QTableWidgetItem, QGroupBox, QFileDialog
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt, QTimer
@@ -13,7 +17,7 @@ from services.work_day_services import WorkDayDAO
 from ui.mainWindow import Ui_MainWindow
 from ui.newYearDialog import Ui_Dialog_NewYear
 from ui.filterDialog import Ui_Dialog_Filter
-from ui.sortDialog import Ui_Dialog_Sort
+from ui.printReportDialog import Ui_PrintReportDialog
 from ui.about import Ui_about
 from ui.reportDialog import Ui_Dialog_Report
 from ui.groupDialog import Ui_Dialog_Group
@@ -1424,6 +1428,422 @@ class ReportDialog(ThemedDialog):
         table_widget.updateGeometry()
 
 
+# === PrintReport ===
+class PrintReportDialog(ThemedDialog):
+    def __init__(self, theme_manager: ThemeManager):
+        super().__init__(theme_manager)
+        self.ui = Ui_PrintReportDialog()
+        self.ui.setupUi(self)
+
+        # Apply start theme
+        self.on_theme_changed(self.theme_manager.get_theme())
+
+        # DAO
+        self.work_day_dao = WorkDayDAO()
+        self.curriculum_dao = CurriculumDAO()
+
+        # Сохраняем ссылки на группы и чекбоксы для удобства
+        self.first_half_checkboxes = [
+            self.ui.chB_september,
+            self.ui.chB_october,
+            self.ui.chB_november,
+            self.ui.chB_december
+        ]
+        self.second_half_checkboxes = [
+            self.ui.chB_january,
+            self.ui.chB_february,
+            self.ui.chB_march,
+            self.ui.chB_april,
+            self.ui.chB_may,
+            self.ui.chB_june
+        ]
+
+        # Подключаем сигналы
+        self.ui.chB_first_half.clicked.connect(self.toggle_first_half_group)
+        self.ui.chB_second_half.clicked.connect(self.toggle_second_half_group)
+        
+        self.ui.btn_Cancel.clicked.connect(self.close)
+
+        # Подключаем сигналы для месяцев, чтобы синхронизировать "полугодие"
+        for cb in self.first_half_checkboxes:
+            cb.stateChanged.connect(lambda state, group=self.ui.gB_first_half, master=self.ui.chB_first_half: self.update_master_checkbox(group, master))
+            cb.stateChanged.connect(self.check_select_all_state)
+        for cb in self.second_half_checkboxes:
+            cb.stateChanged.connect(lambda state, group=self.ui.gB_second_half, master=self.ui.chB_second_half: self.update_master_checkbox(group, master))
+            cb.stateChanged.connect(self.check_select_all_state)
+
+        # Обработчики для "Выбрать всё"
+        self.ui.chB_select_all.clicked.connect(self.toggle_select_all)
+
+        # Подключаем кнопку печати
+        self.ui.btn_Print.clicked.connect(self.on_print_clicked)
+
+    def get_selected_months(self):
+        """Возвращает список выбранных месяцев"""
+        months = []
+        if self.ui.chB_january.isChecked(): months.append("Январь")
+        if self.ui.chB_february.isChecked(): months.append("Февраль")
+        if self.ui.chB_march.isChecked(): months.append("Март")
+        if self.ui.chB_april.isChecked(): months.append("Апрель")
+        if self.ui.chB_may.isChecked(): months.append("Май")
+        if self.ui.chB_june.isChecked(): months.append("Июнь")
+        if self.ui.chB_september.isChecked(): months.append("Сентябрь")
+        if self.ui.chB_october.isChecked(): months.append("Октябрь")
+        if self.ui.chB_november.isChecked(): months.append("Ноябрь")
+        if self.ui.chB_december.isChecked(): months.append("Декабрь")
+        return months
+
+    def get_semester_for_month(self, month_name):
+        """Возвращает '1 полугодие' или '2 полугодие' для указанного месяца"""
+        first_half = ["Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+        second_half = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь"]
+
+        if month_name in first_half:
+            return "1 полугодие"
+        elif month_name in second_half:
+            return "2 полугодие"
+        else:
+            return "Неизвестное полугодие"
+    
+    def get_days_in_month(self, month_name):
+        """
+        Возвращает список рабочих дней (без воскресений) для указанного месяца в текущем году.
+        """
+        month_to_num = {
+            "Январь": 1, "Февраль": 2, "Март": 3, "Апрель": 4,
+            "Май": 5, "Июнь": 6, "Июль": 7, "Август": 8,
+            "Сентябрь": 9, "Октябрь": 10, "Ноябрь": 11, "Декабрь": 12
+        }
+
+        month_num = month_to_num.get(month_name, 0)
+        if not month_num:
+            return []
+
+        current_year = datetime.now().year
+
+        # Собираем даты месяца, исключая воскресенья
+        days = []
+        for day in range(1, calendar.monthrange(current_year, month_num)[1] + 1):
+            dt = date(current_year, month_num, day)
+            weekday = dt.weekday()  # 0 — понедельник, 6 — воскресенье
+            if weekday != 6:  # Исключаем воскресенье
+                days.append(day)
+
+        return days
+
+    def check_select_all_state(self):
+        """Проверяет, должны ли быть сняты галочки с chB_select_all"""
+        all_boxes = self.first_half_checkboxes + self.second_half_checkboxes
+        all_selected = all(cb.isChecked() for cb in all_boxes)
+        self.ui.chB_select_all.setChecked(all_selected)
+
+    def toggle_select_all(self):
+        """Обработчик для chB_select_all"""
+        checked = self.ui.chB_select_all.isChecked()
+        for cb in self.first_half_checkboxes:
+            cb.setChecked(checked)
+        for cb in self.second_half_checkboxes:
+            cb.setChecked(checked)
+        # Обновляем главные чекбоксы
+        self.update_master_checkbox(self.ui.gB_first_half, self.ui.chB_first_half)
+        self.update_master_checkbox(self.ui.gB_second_half, self.ui.chB_second_half)
+
+    def toggle_first_half_group(self):
+        """Обработчик для chB_first_half"""
+        checked = self.ui.chB_first_half.isChecked()
+        for cb in self.first_half_checkboxes:
+            cb.setChecked(checked)
+
+    def toggle_second_half_group(self):
+        """Обработчик для chB_second_half"""
+        checked = self.ui.chB_second_half.isChecked()
+        for cb in self.second_half_checkboxes:
+            cb.setChecked(checked)
+
+    def update_master_checkbox(self, group_box, master_checkbox):
+        """Обновляет состояние главного чекбокса (полугодия) в зависимости от дочерних"""
+        checkboxes = self.get_checkboxes_for_group(group_box)
+        all_checked = all(cb.isChecked() for cb in checkboxes)
+        any_checked = any(cb.isChecked() for cb in checkboxes)
+
+        if all_checked:
+            master_checkbox.setCheckState(Qt.CheckState.Checked)
+        elif any_checked:
+            master_checkbox.setCheckState(Qt.CheckState.PartiallyChecked)
+        else:
+            master_checkbox.setCheckState(Qt.CheckState.Unchecked)
+
+    def get_checkboxes_for_group(self, group_box):
+        """Возвращает список чекбоксов внутри группы"""
+        if group_box is self.ui.gB_first_half:
+            return self.first_half_checkboxes
+        elif group_box is self.ui.gB_second_half:
+            return self.second_half_checkboxes
+        return []
+
+    def on_print_clicked(self):
+        selected_months = self.get_selected_months()
+
+        if not selected_months:
+            QMessageBox.warning(self, "Ошибка", "Не выбран ни один месяц!")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить отчёт",
+            "",
+            "Excel файлы (*.xlsx);;Все файлы (*)"
+        )
+
+        if not file_path:
+            return
+
+        if not file_path.lower().endswith('.xlsx'):
+            file_path += '.xlsx'
+
+        try:
+            # Сортируем месяцы: сначала первое полугодие, потом второе
+            sorted_months = self.sort_months_by_semester(selected_months)
+            self.generate_excel_report(file_path, sorted_months)
+            QMessageBox.information(self, "Успех", f"Отчёт сохранён:\n{file_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить файл:\n{str(e)}")
+            
+    def get_academic_year_for_month(self, month_name):
+        """
+        Возвращает учебный год, определяемый по дате начала учебного года (1 сентября текущего года)
+        """
+        current_year = datetime.now().year
+
+        # Если текущий месяц >= 9 (сентябрь), то учебный год: current_year / current_year + 1
+        current_month = datetime.now().month
+
+        if current_month >= 9:  # Сентябрь–Декабрь → 2025/2026
+            return f"{current_year}/{current_year + 1}"
+        else:  # Январь–Август → 2024/2025
+            return f"{current_year - 1}/{current_year}"
+    
+    def generate_excel_report(self, file_path, selected_months):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Отчёт"
+
+        # Шрифты
+        title_font = Font(bold=True, size=14)
+        header_font = Font(bold=True)
+        center_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left_alignment = Alignment(horizontal="left", vertical="center")
+
+        # Границы
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        row_num = 1
+
+        for month in selected_months:
+            # Определяем учебный год для этого месяца
+            academic_year = self.get_academic_year_for_month(month)
+
+            # Заголовок: "2025/2026 учебный год" и название месяца в одной строке
+            ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=2)  # I полугодие + Дисциплина
+            cell = ws.cell(row=row_num, column=1, value=f"{academic_year} учебный год")
+            cell.font = title_font
+            cell.alignment = center_alignment
+
+            # Название месяца в той же строке, но в правой части
+            col_start = 3  # Столбец после "Дисциплина"
+            working_days = self.get_days_in_month(month)  # ✅
+            col_end = col_start + len(working_days) + 2  # ✅
+            ws.merge_cells(start_row=row_num, start_column=col_start, end_row=row_num, end_column=col_end)
+            semester_text = self.get_semester_for_month(month)
+            cell = ws.cell(row=row_num, column=col_start, value=f"Учет проведенных занятий в {semester_text} — {month}")
+            cell.font = title_font
+            cell.alignment = center_alignment
+
+            row_num += 1
+
+            # Заголовки столбцов
+            headers = [
+                "Всего ч.",
+                "Дисциплина",
+                "Группа"
+            ] + [str(day) for day in working_days] + ["Прошло", "Осталось"]
+
+            # Пишем заголовки
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=row_num, column=col_num, value=header)
+                cell.font = header_font
+                cell.alignment = center_alignment
+                cell.border = thin_border
+
+            row_num += 1
+
+            # Получаем данные для месяца
+            data_rows = self.get_month_data(month)
+
+            # Пишем данные
+            for data_row in data_rows:
+                for col_num, value in enumerate(data_row, 1):
+                    cell = ws.cell(row=row_num, column=col_num, value=value)
+                    cell.alignment = center_alignment
+                    cell.border = thin_border
+                    # Если значение = 0 и это день месяца — оставляем пустым
+                    if col_num >= 4 and col_num <= 3 + len(working_days) and value == 0:  # ✅
+                        cell.value = ""  # Пустая ячейка
+                row_num += 1
+
+            # Пустая строка между таблицами
+            row_num += 1
+
+        # Автоподбор ширины
+        for col in ws.columns:
+            max_length = 0
+            col_letter = get_column_letter(col[0].column)
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[col_letter].width = adjusted_width
+
+        wb.save(file_path)
+        
+    def get_academic_year_from_date(self, date_str):
+        """Определяет учебный год по дате в формате 'YYYY-MM-DD'"""
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return "Неизвестный"
+
+        year = dt.year
+        month = dt.month
+
+        if month >= 9:  # Сентябрь–Декабрь → учебный год: year / year+1
+            return f"{year}/{year + 1}"
+        else:  # Январь–Август → учебный год: year-1 / year
+            return f"{year - 1}/{year}"
+        
+    def sort_months_by_semester(self, months):
+        """
+        Разделяет месяцы на два списка:
+        - first_half: сентябрь–декабрь
+        - second_half: январь–июнь
+        """
+        first_half = []
+        second_half = []
+
+        month_order = {
+            "Январь": 1, "Февраль": 2, "Март": 3, "Апрель": 4,
+            "Май": 5, "Июнь": 6, "Июль": 7, "Август": 8,
+            "Сентябрь": 9, "Октябрь": 10, "Ноябрь": 11, "Декабрь": 12
+        }
+
+        for month in months:
+            if month_order.get(month, 0) >= 9:  # Сентябрь–Декабрь
+                first_half.append(month)
+            else:  # Январь–Июнь
+                second_half.append(month)
+
+        # Сортируем по порядку
+        first_half.sort(key=lambda m: month_order[m])
+        second_half.sort(key=lambda m: month_order[m])
+
+        return first_half + second_half  # Сначала первое полугодие, потом второе
+        
+    def write_month_table(self, writer, month_name):
+        """
+        Пишет таблицу для одного месяца
+        """
+        # Получаем данные для этого месяца
+        data_rows = self.get_month_data(month_name)
+
+        # Записываем заголовок таблицы
+        writer.writerow(["2025/2026 учебный год", "", "", "Учет проведенных занятий в 1 полугодии"])
+        writer.writerow([f"{month_name}", "", "", ""])  # Название месяца
+        writer.writerow(["I полугодие", "Дисциплина", "Группа"] + 
+                        [str(day) for day in range(1, self.get_days_in_month(month_name) + 1)] + 
+                        ["Прошло", "Осталось"])
+
+        # Записываем данные
+        for row in data_rows:
+            writer.writerow(row)
+
+        # Пустая строка между таблицами
+        writer.writerow([])
+        
+    def get_month_data(self, month_name):
+        work_days = self.work_day_dao.get_all_work_days()
+        curricula = self.curriculum_dao.get_all_curriculums()
+
+        # Создаем словарь: (subject, group) -> {day: hours}
+        grouped_data = defaultdict(lambda: defaultdict(int))
+
+        for wd in work_days:
+            date_str = wd[1]  # date
+            subject = wd[2]   # subject_name
+            group = wd[3]     # group_name
+            hours = wd[5]     # hours
+
+            try:
+                dt = datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                continue
+
+            # Фильтруем только по нужному месяцу
+            if self.month_number_to_name(dt.month) != month_name:
+                continue
+
+            # Пропускаем воскресенье
+            day_num = dt.day
+            weekday = dt.weekday()
+            if weekday == 6:  # воскресенье
+                continue
+
+            key = (subject, group)
+            grouped_data[key][day_num] += hours
+
+        # Карта: (group, subject) -> total_hour
+        curriculum_map = {(c[3], c[4]): c[2] for c in curricula}  # (group_name, subject_name) -> total_hour
+
+        rows = []
+        for (subject, group), daily_hours in grouped_data.items():
+            # Первый столбец — общее число часов по предмету у группы в плане
+            total_plan = curriculum_map.get((group, subject), 0)
+
+            row = [total_plan, subject, group]  # I полугодие, дисциплина, группа
+
+            working_days = self.get_days_in_month(month_name)
+            for day in working_days:
+                row.append(daily_hours.get(day, 0))
+
+            # Прошло и Осталось
+            total_in_month = sum(daily_hours.get(d, 0) for d in working_days)
+            remaining = max(0, total_plan - total_in_month)
+
+            row.append(total_in_month)
+            row.append(remaining)
+
+            rows.append(row)
+
+        return rows
+    
+    # В класс PrintReportDialog добавьте:
+    def month_number_to_name(self, month_num):
+        """Преобразует номер месяца в его имя"""
+        names = {
+            1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
+            5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
+            9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
+        }
+        return names.get(month_num, "Неизвестный")
+
+
 # === MainWindow ===
 class MainWindow(ThemedWindow):
     def __init__(self, theme_manager: ThemeManager):
@@ -1474,6 +1894,8 @@ class MainWindow(ThemedWindow):
         self.ui.dark.triggered.connect(lambda: self.theme_manager.set_theme("dark"))
         self.ui.blue.triggered.connect(lambda: self.theme_manager.set_theme("blue"))
         self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
+        self.ui.about_start.triggered.connect(lambda: self.open_about_start())
+        self.ui.report.triggered.connect(lambda: self.open_print_report())
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
@@ -1535,15 +1957,12 @@ class MainWindow(ThemedWindow):
         try:
             # Получить все записи из БД (для работы с ними)
             all_work_days = self.work_day_dao.get_all_work_days()
-            # print(f"Найдено {len(all_work_days)} записей рабочих дней.")
 
             # Определить текущий семестр на основе выбранного полугодия
             current_semester = 1 if self.ui.rBtn_First.isChecked() else 2
-            # print(f"Текущий семестр: {current_semester}")
 
             # Получить все учебные планы для текущего семестра
             curriculums_for_semester = self.curriculum_dao.get_curriculums_by_semester(current_semester)
-            # print(f"Найдено {len(curriculums_for_semester)} учебных планов для семестра {current_semester}.")
             
             if self.current_group_filter or self.current_subject_filter:
                 filtered_curriculums = []
@@ -2116,6 +2535,10 @@ class MainWindow(ThemedWindow):
         
     def open_subject_dialog(self):
         dialog = SubjectDialog(self.theme_manager)
+        dialog.exec()
+        
+    def open_print_report(self):
+        dialog = PrintReportDialog(self.theme_manager)
         dialog.exec()
 
 
