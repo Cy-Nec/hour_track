@@ -172,6 +172,7 @@ class YearEditDialog(ThemedDialog):
         self.ui.btn_AddSelected.clicked.connect(self.move_selected_items_to_table)
         self.ui.btn_RemoveSelected.clicked.connect(self.move_selected_items_to_list)
         self.ui.btn_Accept.clicked.connect(self.apply_changes)
+        self.ui.btn_Cancel.clicked.connect(self.close)
         
         self.ui.comboBox_Groups.currentTextChanged.connect(self.on_group_or_semester_changed)
         self.ui.radioButton_First.toggled.connect(self.on_group_or_semester_changed)
@@ -368,6 +369,7 @@ class SubjectDialog(ThemedDialog):
         self.ui.btn_Update.clicked.connect(self.update_subject)
         self.ui.btn_Delete.clicked.connect(self.delete_subject)
         self.ui.btn_Accept.clicked.connect(self.accept_and_sync)
+        self.ui.btn_Cancel.clicked.connect(self.close)
     
     def update_icons(self):
         """Update icons when theme switched"""
@@ -682,6 +684,7 @@ class GroupDialog(ThemedDialog):
         self.ui.btn_Update.clicked.connect(self.update_group)
         self.ui.btn_Delete.clicked.connect(self.delete_group)
         self.ui.btn_Accept.clicked.connect(self.accept_and_sync)
+        self.ui.btn_Cancel.clicked.connect(self.close)
     
     def update_icons(self):
         """Update icons when theme switched"""
@@ -1338,7 +1341,6 @@ class FilterDialog(ThemedDialog):
         self.accept()
 
 
-
 # === about ===
 class AboutWindow(ThemedDialog):
     def __init__(self, theme_manager: ThemeManager):
@@ -1351,13 +1353,75 @@ class AboutWindow(ThemedDialog):
 
 
 class ReportDialog(ThemedDialog):
-    def __init__(self, theme_manager: ThemeManager):
+    def __init__(self, theme_manager: ThemeManager, report_data: list):
         super().__init__(theme_manager)
         self.ui = Ui_Dialog_Report()
         self.ui.setupUi(self)
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
+
+        # Подключаем кнопку закрытия
+        self.ui.btn_close.clicked.connect(self.close)
+
+        # Заполняем таблицу данными
+        self.populate_report_table(report_data)
+
+    def populate_report_table(self, report_data):
+        """Заполняет таблицу отчёта данными."""
+        self.ui.treeW_report.setRowCount(len(report_data))
+        self.ui.treeW_report.setColumnCount(4)
+
+        for row_index, (group_name, subject_name, total_hour, sum_of_hours) in enumerate(report_data):
+            # Группа
+            item_group = QTableWidgetItem(group_name)
+            item_group.setFlags(item_group.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            self.ui.treeW_report.setItem(row_index, 0, item_group)
+
+            # Дисциплина
+            item_subject = QTableWidgetItem(subject_name)
+            item_subject.setFlags(item_subject.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            self.ui.treeW_report.setItem(row_index, 1, item_subject)
+
+            # Проведено ч. (сумма)
+            item_hours_done = QTableWidgetItem(str(sum_of_hours))
+            item_hours_done.setFlags(item_hours_done.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            self.ui.treeW_report.setItem(row_index, 2, item_hours_done)
+
+            # Остаток ч. (план - проведено)
+            remaining_hours = total_hour - sum_of_hours
+            item_hours_remaining = QTableWidgetItem(str(remaining_hours))
+            item_hours_remaining.setFlags(item_hours_remaining.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            self.ui.treeW_report.setItem(row_index, 3, item_hours_remaining)
+
+        table_widget = self.ui.treeW_report
+        header = table_widget.horizontalHeader()
+
+        # Устанавливаем стратегию изменения размера для каждого столбца
+        for i in range(4):
+            header.setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+
+        table_widget.updateGeometry()
+
+        fm = header.fontMetrics() # Используем fontMetrics заголовка
+
+        for i in range(4):
+            header_item = table_widget.horizontalHeaderItem(i)
+            if header_item:
+                # Текст заголовка
+                header_text = header_item.text()
+                # Измеряем ширину текста заголовка
+                header_text_width = fm.horizontalAdvance(header_text)
+
+                min_width = header_text_width + 10 # Добавляем небольшой отступ
+
+                header.setMinimumSectionSize(min_width)
+                current_size = header.sectionSize(i)
+                if current_size < min_width:
+                    header.resizeSection(i, min_width) # Устанавливаем размер, если он меньше минимума
+
+        # Обновляем геометрию ещё раз после установки минимальных размеров
+        table_widget.updateGeometry()
 
 
 # === MainWindow ===
@@ -1676,6 +1740,7 @@ class MainWindow(ThemedWindow):
 
         self.update_table_sizes()
         self.ui.line_Search.clear()
+        
         QTimer.singleShot(0, self.load_and_display_work_days)
 
     def on_tab_changed(self, index):
@@ -1794,7 +1859,6 @@ class MainWindow(ThemedWindow):
                 else:
                     table_widget.hideRow(row) # Скрываем строку, если совпадений не найдено
 
-        # После фильтрации может потребоваться обновить размеры
         self.update_table_sizes()
             
     def setup_table_connections(self):
@@ -1820,7 +1884,6 @@ class MainWindow(ThemedWindow):
             # print(f"on_cell_changed вызван не для QTableWidget, а для {type(sender)}. Игнорируем.")
             return
 
-        # Проверяем, что изменение произошло не в первых двух столбцах (Группа, Предмет)
         if col < 2:
             return
 
@@ -1856,14 +1919,12 @@ class MainWindow(ThemedWindow):
 
         # Проверяем, существуют ли ячейки и содержат ли они непустой текст
         if item_group is None or item_subject is None:
-            # print(f"Предупреждение: Ячейки группы или предмета для строки {row} отсутствуют или пусты. Игнорируем изменение в ячейке {col}.")
             return
 
         group_name = item_group.text().strip()
         subject_name = item_subject.text().strip()
 
         if not group_name or not subject_name:
-            # print(f"Предупреждение: Пустые данные группы ('{group_name}') или предмета ('{subject_name}') для строки {row}. Игнорируем изменение в ячейке {col}.")
             return
 
         # Валидация числового значения
@@ -1873,10 +1934,8 @@ class MainWindow(ThemedWindow):
                 for record in existing_records:
                     if record[3] == group_name and record[2] == subject_name and record[4] == current_semester:
                         self.work_day_dao.delete_work_day(record[0])
-                        # print(f"Удалена запись для {group_name}, {subject_name}, {target_date} (пустое значение).")
                         break
             except Exception as e:
-                # print(f"Ошибка при удалении записи из БД: {e}")
                 self.show_error_message(f"Ошибка при удалении данных: {e}")
             return # Завершаем обработку, если значение пустое
 
@@ -1886,13 +1945,10 @@ class MainWindow(ThemedWindow):
                 raise ValueError("Часы не могут быть отрицательными.")
         except ValueError:
             # Значение не является числом или отрицательное
-            # print(f"Неверный формат часов: '{new_text}'. Сбрасываем значение.")
-            # Восстановим предыдущее значение (или пустую строку), показав сообщение об ошибке
-            item.setText("") # Сбросим значение в ячейке
+            item.setText("") 
             self.show_error_message("Значение должно быть числом (часы).")
             return
-
-        # Теперь мы готовы обновить/вставить запись в БД
+        
         try:
             # Проверим, существует ли уже запись для этой даты, группы, предмета и семестра
             existing_records = self.work_day_dao.get_work_days_by_date(target_date)
@@ -1942,21 +1998,16 @@ class MainWindow(ThemedWindow):
 
     def on_reset_clicked(self):
         """Handler for the 'Сброс' button."""
-        print("Сброс фильтров и поиска.")
         # Сброс фильтров по группам и предметам
         self.current_group_filter = set()
         self.current_subject_filter = set()
-        print(f"Фильтры сброшены: Группы={self.current_group_filter}, Предметы={self.current_subject_filter}")
 
         # Сброс строки поиска
         self.ui.line_Search.clear()
-        print("Строка поиска очищена.")
 
         # Сброс фильтра поиска (скрытые строки)
         self.ui.line_Search.clear()
 
-        # Перезагрузка данных с учетом сброшенных фильтров
-        # on_half_changed() пересоздаст структуру таблиц и вызовет load_and_display_work_days
         self.on_half_changed()
 
     def update_icons(self):
@@ -1995,9 +2046,64 @@ class MainWindow(ThemedWindow):
             # Перезагружаем данные с учетом фильтров
             QTimer.singleShot(0, self.load_and_display_work_days)
         # Если пользователь нажал "Отменить", фильтры остаются неизменными
+        
+    def get_report_data(self):
+        """
+        Подготавливает данные для отчёта: (group_name, subject_name, total_hour_plan, sum_of_hours_done).
+        Учитывает текущие фильтры по группам и предметам.
+        """
+        # Определить текущий семестр
+        current_semester = 1 if self.ui.rBtn_First.isChecked() else 2
+
+        # Получить все учебные планы для текущего семестра
+        curriculums_for_semester = self.curriculum_dao.get_curriculums_by_semester(current_semester)
+
+        # Фильтруем учебные планы по текущим фильтрам
+        if self.current_group_filter or self.current_subject_filter:
+            filtered_curriculums = []
+            for curriculum in curriculums_for_semester:
+                group_name = curriculum[3]
+                subject_name = curriculum[4]
+                group_ok = not self.current_group_filter or group_name in self.current_group_filter
+                subject_ok = not self.current_subject_filter or subject_name in self.current_subject_filter
+                if group_ok and subject_ok:
+                    filtered_curriculums.append(curriculum)
+            curriculums_for_semester = filtered_curriculums
+
+        all_work_days = self.work_day_dao.get_all_work_days()
+
+        # Подготовить итоговый список
+        report_data = []
+
+        for curriculum in curriculums_for_semester:
+            # curriculum - это (id, semester, total_hour, group_name, subject_name)
+            curriculum_id = curriculum[0]
+            semester = curriculum[1]
+            total_hour = curriculum[2]
+            group_name = curriculum[3]
+            subject_name = curriculum[4]
+
+            # Суммируем часы для этой группы и предмета в этом семестре
+            sum_of_hours = 0
+            for work_day in all_work_days:
+                # work_day - это (id, date_str, subject_name, group_name, semester, hours)
+                wd_subject = work_day[2]
+                wd_group = work_day[3]
+                wd_semester = work_day[4]
+                wd_hours = work_day[5]
+
+                if (wd_group == group_name and wd_subject == subject_name and
+                    wd_semester == current_semester):
+                    sum_of_hours += wd_hours
+
+            report_data.append((group_name, subject_name, total_hour, sum_of_hours))
+
+        return report_data
 
     def open_report_dialog(self):
-        dialog = ReportDialog(self.theme_manager)
+        report_data = self.get_report_data()
+
+        dialog = ReportDialog(self.theme_manager, report_data)
         dialog.exec()
 
     def open_aboutWindow(self):

@@ -23,6 +23,7 @@ class Ui_about(object):
         font = QtGui.QFont()
         font.setPointSize(11)
         self.label.setFont(font)
+        self.label.setWordWrap(True)
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
 
@@ -32,7 +33,7 @@ class Ui_about(object):
     def retranslateUi(self, about):
         _translate = QtCore.QCoreApplication.translate
         about.setWindowTitle(_translate("about", "О программе"))
-        self.label.setText(_translate("about", "<html><head/><body><p align=\"center\"><span style=\" font-weight:600;\">hourTack</span></p><p align=\"center\">Программа разработанная для ...</p><p align=\"right\"><br/><br/></p><p align=\"right\"><br/></p><p align=\"right\"><br/></p><p align=\"right\"><br/></p><p align=\"right\">GitHub: <a href=\"https://github.com/Cy-Nec/hour_track\"><span style=\" text-decoration: underline; color:#0000ff;\">source</span></a></p><p align=\"right\">© Protocol 418</p></body></html>"))
+        self.label.setText(_translate("about", "<html><head/><body><p align=\"center\"><span style=\" font-weight:600;\">hourTack</span></p><p align=\"center\">Программа для ведения учёта и анализа проведённых учебных часов по дисциплинам в различных группах.</p><p align=\"right\"><br/><br/></p><p align=\"right\"><br/></p><p align=\"right\">GitHub: <a href=\"https://github.com/Cy-Nec/hour_track\"><span style=\" text-decoration: underline; color:#0000ff;\">source</span></a></p><p align=\"right\">© Protocol 418</p><p align=\"right\"><a href=\"https://github.com/Cy-Nec\"><span style=\" text-decoration: underline; color:#0000ff;\">Cy_Nec</span></a></p><p align=\"right\"><a href=\"https://github.com/taishakutenn\"><span style=\" text-decoration: underline; color:#0000ff;\">taishakutenn</span></a></p></body></html>"))
 
 
 if __name__ == "__main__":
