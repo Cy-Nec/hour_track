@@ -1,11 +1,12 @@
-from settings.settings import ROOT_PATH
 from .general import DBBase
 
 
 class GroupDAO(DBBase):
-    def __init__(self, db=None):
-        super().__init__(rf"{ROOT_PATH}\db\hour_track.db")
-        self.cursor = self.create_cursor()
+    def __init__(self, db_filename=None):
+        super().__init__(db_filename)
+        # self.cursor = self.create_cursor()
+        # Включаем проверку внешних ключей
+        # self._connection.execute("PRAGMA foreign_keys = ON")
 
     def create_group(self, group_name) -> str | None:
         """Создание группы"""

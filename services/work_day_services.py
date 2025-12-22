@@ -1,13 +1,12 @@
 from .general import DBBase
-from settings.settings import ROOT_PATH
 
 
 class WorkDayDAO(DBBase):
-    def __init__(self, db=None):
-        super().__init__(rf"{ROOT_PATH}\db\hour_track.db")
-        self.cursor = self.create_cursor()
+    def __init__(self, db_filename=None):
+        super().__init__(db_filename)
+        # self.cursor = self.create_cursor()
         # Включаем проверку внешних ключей
-        self._connection.execute("PRAGMA foreign_keys = ON")
+        # self._connection.execute("PRAGMA foreign_keys = ON")
 
     def create_work_day(self, date, subject_name, group_name, semester, hours) -> tuple | None:
         """Заполнение одного рабочего дня"""

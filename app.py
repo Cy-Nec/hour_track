@@ -1,5 +1,6 @@
 import calendar
 from collections import defaultdict
+import shutil
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -7,6 +8,8 @@ import sys
 import os
 import configparser
 from datetime import date, datetime, timedelta
+
+from settings.settings import update_root_path_with_db_file, get_current_db_filename, reset_to_default_db
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidgetItem, QCompleter, QHeaderView, QTableWidget, QTableWidgetItem, QGroupBox, QFileDialog
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
@@ -153,14 +156,14 @@ class ThemedDialog(QDialog):
 
 
 class YearEditDialog(ThemedDialog):
-    def __init__(self, theme_manager):
+    def __init__(self, theme_manager, group_dao, subject_dao, curriculum_dao):
         super().__init__(theme_manager)
         self.ui = Ui_Dialog_YearEdit()
         self.ui.setupUi(self)
         
-        self.group_service = GroupDAO()
-        self.subject_service = SubjectDAO()
-        self.curriculum_service = CurriculumDAO()
+        self.group_service = group_dao 
+        self.subject_service = subject_dao
+        self.curriculum_service = curriculum_dao
         
         self.on_theme_changed(self.theme_manager.get_theme())
         self.update_icons()
@@ -300,7 +303,7 @@ class YearEditDialog(ThemedDialog):
         """
         group_name = self.ui.comboBox_Groups.currentText()
         if not group_name:
-            QMessageBox.information(self, "Не выбрана группа. Невозможно сохранить данные.")
+            QMessageBox.information(self, "Не выбрана группа.", "Невозможно сохранить данные.")
             return
 
         if self.ui.radioButton_First.isChecked():
@@ -343,18 +346,20 @@ class YearEditDialog(ThemedDialog):
                     subject_name=subject_name
                 )
             QMessageBox.information(self, "Успех", f"Данные для группы '{group_name}' и семестра {semester} успешно сохранены.")
+            self.accept()
+            
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при сохранении данных: {e}")
 
 
 class SubjectDialog(ThemedDialog):
-    def __init__(self, theme_manager):
+    def __init__(self, theme_manager, subject_dao):
         super().__init__(theme_manager)
         self.ui = Ui_Dialog_Subject()
         self.ui.setupUi(self)
 
-        self.subject_service = SubjectDAO()
+        self.subject_service = subject_dao
 
         self.on_theme_changed(self.theme_manager.get_theme())
         self.update_icons()
@@ -457,8 +462,7 @@ class SubjectDialog(ThemedDialog):
             QMessageBox.warning(self, "Часть данных не синхронизирована", f"Произошли ошибки при синхронизации:\n{error_details}\n\n.")
         else:
             QMessageBox.information(self, "Успешно", f"Список дисциплин синхронизирован с базой данных.\nУдалено: {len(names_to_delete)}, добавлено: {len(names_to_add)}.")
-
-        self.load_subjects() 
+            self.accept()
 
     def count_empty_items(self):
         """
@@ -614,15 +618,19 @@ class SubjectDialog(ThemedDialog):
 
         self.ui.comboBox_Subjects.setCompleter(completer)
 
-    def add_empty_row(self):
-        count = self.ui.listWidget_Subjects.count()
-        if count == 0:
-            return
-        
+    def add_empty_row(self):        
         new_item = QListWidgetItem("") 
         new_item.setFlags(new_item.flags() | Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsEnabled)
         new_item.setData(Qt.ItemDataRole.BackgroundRole, QPalette.ColorRole.AlternateBase)
         self.ui.listWidget_Subjects.addItem(new_item)
+        
+        self.ui.listWidget_Subjects.clearSelection()
+        # Устанавливаем фокус на виджет списка, чтобы выбор был виден
+        self.ui.listWidget_Subjects.setFocus()
+        # Выбираем новый элемент
+        new_item.setSelected(True)
+        self.ui.listWidget_Subjects.setCurrentItem(new_item)
+        self.ui.listWidget_Subjects.editItem(new_item)
 
     def remove_empty_row(self):
         count = self.ui.listWidget_Subjects.count()
@@ -664,12 +672,12 @@ class SubjectDialog(ThemedDialog):
         
         
 class GroupDialog(ThemedDialog):
-    def __init__(self, theme_manager):
+    def __init__(self, theme_manager, group_dao):
         super().__init__(theme_manager)
         self.ui = Ui_Dialog_Group()
         self.ui.setupUi(self)
 
-        self.group_service = GroupDAO()
+        self.group_service = group_dao
 
         self.on_theme_changed(self.theme_manager.get_theme())
         self.update_icons()
@@ -772,8 +780,7 @@ class GroupDialog(ThemedDialog):
             QMessageBox.warning(self, "Часть данных не синхронизирована", f"Произошли ошибки при синхронизации:\n{error_details}\n\nСм. лог для подробностей.")
         else:
             QMessageBox.information(self, "Успешно", f"Список групп синхронизирован с базой данных.\nУдалено: {len(names_to_delete)}, добавлено: {len(names_to_add)}.")
-
-        self.load_groups() 
+            self.accept()
 
     def count_empty_items(self):
         """
@@ -929,15 +936,19 @@ class GroupDialog(ThemedDialog):
 
         self.ui.comboBox_Groups.setCompleter(completer)
 
-    def add_empty_row(self):
-        count = self.ui.listWidget_Groups.count()
-        if count == 0:
-            return
-        
+    def add_empty_row(self):        
         new_item = QListWidgetItem("") 
         new_item.setFlags(new_item.flags() | Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsEnabled)
         new_item.setData(Qt.ItemDataRole.BackgroundRole, QPalette.ColorRole.AlternateBase)
         self.ui.listWidget_Groups.addItem(new_item)
+        
+        self.ui.listWidget_Groups.clearSelection()
+        # Устанавливаем фокус на виджет списка, чтобы выбор был виден
+        self.ui.listWidget_Groups.setFocus()
+        # Выбираем новый элемент
+        new_item.setSelected(True)
+        self.ui.listWidget_Groups.setCurrentItem(new_item)
+        self.ui.listWidget_Groups.editItem(new_item)
 
     def remove_empty_row(self):
         count = self.ui.listWidget_Groups.count()
@@ -1645,19 +1656,16 @@ class PrintReportDialog(ThemedDialog):
         row_num = 1
 
         for month in selected_months:
-            # Определяем учебный год для этого месяца
             academic_year = self.get_academic_year_for_month(month)
 
-            # Заголовок: "2025/2026 учебный год" и название месяца в одной строке
-            ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=2)  # I полугодие + Дисциплина
+            ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=2)  
             cell = ws.cell(row=row_num, column=1, value=f"{academic_year} учебный год")
             cell.font = title_font
             cell.alignment = center_alignment
 
-            # Название месяца в той же строке, но в правой части
             col_start = 3  # Столбец после "Дисциплина"
-            working_days = self.get_days_in_month(month)  # ✅
-            col_end = col_start + len(working_days) + 2  # ✅
+            working_days = self.get_days_in_month(month)  
+            col_end = col_start + len(working_days) + 2  
             ws.merge_cells(start_row=row_num, start_column=col_start, end_row=row_num, end_column=col_end)
             semester_text = self.get_semester_for_month(month)
             cell = ws.cell(row=row_num, column=col_start, value=f"Учет проведенных занятий в {semester_text} — {month}")
@@ -1724,9 +1732,9 @@ class PrintReportDialog(ThemedDialog):
         year = dt.year
         month = dt.month
 
-        if month >= 9:  # Сентябрь–Декабрь → учебный год: year / year+1
+        if month >= 9:  
             return f"{year}/{year + 1}"
-        else:  # Январь–Август → учебный год: year-1 / year
+        else:  
             return f"{year - 1}/{year}"
         
     def sort_months_by_semester(self, months):
@@ -1851,22 +1859,27 @@ class MainWindow(ThemedWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         
-        self.work_day_dao = WorkDayDAO()
-        self.curriculum_dao = CurriculumDAO()
+        current_db_filename = get_current_db_filename()
+        print(f"MainWindow: Используется база данных: {current_db_filename}")
         
-        self.current_group_filter = set() # Изначально пустой фильтр
-        self.current_subject_filter = set() # Изначально пустой фильтр
+        self.work_day_dao = WorkDayDAO(db_filename=current_db_filename)
+        self.curriculum_dao = CurriculumDAO(db_filename=current_db_filename)
+        self.group_dao = GroupDAO(db_filename=current_db_filename)
+        self.subject_dao = SubjectDAO(db_filename=current_db_filename)
         
-        self.table_date_mapping = {} # Добавьте эту строку
+        self.current_group_filter = set() 
+        self.current_subject_filter = set() 
+        
+        self.table_date_mapping = {} 
 
-        # "Первое" полугодие = Сент–Дек (4 месяца)
+        # Первое полугодие = Сент–Дек (4 месяца)
         self.first_half = [
             (9, "Сент"),
             (10, "Окт"),
             (11, "Нояб"),
             (12, "Декаб")
         ]
-        # "Второе" полугодие = Янв–Июнь (6 месяцев)
+        # Второе полугодие = Янв–Июнь (6 месяцев)
         self.second_half = [
             (1, "Янв"),
             (2, "Фев"),
@@ -1876,7 +1889,6 @@ class MainWindow(ThemedWindow):
             (6, "Июнь")
         ]
         
-        # Переменная текущего года
         self.first_half_year = date.today().year
 
         # Подключаем радиокнопки
@@ -1896,6 +1908,7 @@ class MainWindow(ThemedWindow):
         self.ui.about.triggered.connect(lambda: self.open_aboutWindow())
         self.ui.about_start.triggered.connect(lambda: self.open_about_start())
         self.ui.report.triggered.connect(lambda: self.open_print_report())
+        self.ui.create_file.triggered.connect(lambda: self.open_create_file_dialog())
 
         # Apply start theme
         self.on_theme_changed(self.theme_manager.get_theme())
@@ -1905,8 +1918,6 @@ class MainWindow(ThemedWindow):
             self.ui.btn_NewYear.clicked.connect(self.open_new_year_dialog)
         if hasattr(self.ui, 'btn_Filt'):
             self.ui.btn_Filt.clicked.connect(self.open_filter_dialog)
-        if hasattr(self.ui, 'btn_Sort'):
-            self.ui.btn_Sort.clicked.connect(self.open_sort_dialog)
         if hasattr(self.ui, 'btn_Report'):
             self.ui.btn_Report.clicked.connect(self.open_report_dialog)
         if hasattr(self.ui, 'btn_Group'):
@@ -1950,7 +1961,172 @@ class MainWindow(ThemedWindow):
         self.update_icons()
 
         QTimer.singleShot(0, self.update_table_sizes)
+    
+    def get_current_academic_year(self):
+        """
+        Определяет текущий учебный год.
+        Учебный год начинается 1 сентября.
+        Возвращает кортеж (год_начала, год_конца).
+        """
+        current_date = datetime.now().date()
+        current_month = current_date.month
+        current_year = current_date.year
+
+        if current_month >= 9: # Сентябрь или позже -> начало нового учебного года
+            start_year = current_year
+            end_year = current_year + 1
+        else: # До сентября -> всё ещё предыдущий учебный год
+            start_year = current_year - 1
+            end_year = current_year
+
+        return start_year, end_year
+    
+    def close_all_connections(self):
+        """
+        Закрывает все соединения с базой данных.
+        """
+        # Закрываем соединения DAO
+        if hasattr(self, 'work_day_dao') and self.work_day_dao is not None:
+            try:
+                self.work_day_dao._connection.close()
+                print("Соединение WorkDayDAO закрыто.")
+            except Exception as e:
+                print(f"Ошибка при закрытии соединения WorkDayDAO: {e}")
+
+        if hasattr(self, 'curriculum_dao') and self.curriculum_dao is not None:
+            try:
+                self.curriculum_dao._connection.close()
+                print("Соединение CurriculumDAO закрыто.")
+            except Exception as e:
+                print(f"Ошибка при закрытии соединения CurriculumDAO: {e}")
+
+        if hasattr(self, 'group_dao') and self.group_dao is not None:
+            try:
+                self.group_dao._connection.close()
+                print("Соединение GroupDAO закрыто.")
+            except Exception as e:
+                print(f"Ошибка при закрытии соединения GroupDAO: {e}")
         
+        if hasattr(self, 'subject_dao') and self.subject_dao is not None:
+            try:
+                self.subject_dao._connection.close()
+                print("Соединение SubjectDAO закрыто.")
+            except Exception as e:
+                print(f"Ошибка при закрытии соединения SubjectDAO: {e}")
+
+
+    def create_new_database(self):
+        """
+        Создаёт новую базу данных с уникальным именем и инициализирует её.
+        Архивирует старую базу данных, если она существует.
+        """
+        print("Создание новой базы данных...")
+
+        # 1. Определить текущий учебный год
+        start_year, end_year = self.get_current_academic_year()
+        academic_year_str = f"{start_year}-{end_year}"
+        print(f"Определён учебный год: {academic_year_str}")
+
+        # 2. Сформировать имя новой базы данных
+        now = datetime.now()
+        new_db_filename = now.strftime("%y-%m-%d_%H-%M") + f"_{academic_year_str}.db"
+        print(f"Имя новой базы данных: {new_db_filename}")
+
+        # 3. Определить пути
+        # Используем get_base_root_path как базовую директорию проекта
+        from settings.settings import get_base_root_path
+        base_path = get_base_root_path() # Это Path объект
+        db_dir = base_path / "db" 
+        archive_dir = base_path / "archive" 
+        base_script_path = db_dir / "base_script.sql" 
+
+        db_dir.mkdir(exist_ok=True)
+        archive_dir.mkdir(exist_ok=True)
+
+        new_db_path = db_dir / new_db_filename 
+        new_full_db_path_str = str(new_db_path) # Полный путь как строка
+
+        # 4. Проверить существующую базу данных в папке db
+        existing_db_path = None
+        for p in db_dir.glob("*.db"):
+            # Исключаем файл с именем, которое мы только что сгенерировали
+            if p.name != new_db_filename:
+                # Дополнительно можно проверить, является ли он текущим, используя get_current_db_filename
+                # Это более надёжно, если вдруг в папке db лежат старые архивы
+                if p.name == get_current_db_filename():
+                     existing_db_path = p
+                     break # Нашли текущий файл БД
+
+        # 5. Архивировать существующую базу данных
+        if existing_db_path:
+            print(f"Найдена существующая база данных (текущая): {existing_db_path}")
+
+            # Закрываем все соединения перед архивацией
+            self.close_all_connections()
+
+            # Сформировать имя для архива
+            timestamp_for_archive = now.strftime("%Y%m%d_%H%M%S")
+            archive_filename = f"archived_{existing_db_path.name}_{timestamp_for_archive}.db"
+            archive_path = archive_dir / archive_filename
+
+            try:
+                shutil.move(str(existing_db_path), str(archive_path))
+                print(f"Существующая база данных архивирована в: {archive_path}")
+            except Exception as e:
+                print(f"Ошибка при архивации базы данных: {e}")
+                QMessageBox.critical(self, "Ошибка", f"Не удалось архивировать существующую базу данных: {e}")
+                return
+        else:
+            print("Текущая база данных для архивации не найдена в папке 'db' или это default.db.")
+
+        # 6. Создать новую базу данных и инициализировать её
+        try:
+            import sqlite3
+            conn = sqlite3.connect(new_full_db_path_str)
+            cursor = conn.cursor()
+
+            with open(str(base_script_path), 'r', encoding='utf-8') as script_file:
+                init_script = script_file.read()
+
+            cursor.executescript(init_script)
+            conn.commit()
+            conn.close()
+
+            print(f"Новая база данных создана и инициализирована: {new_full_db_path_str}")
+
+            update_root_path_with_db_file(new_full_db_path_str)
+            print(f"ROOT_PATH и имя БД обновлены через settings.")
+
+            self.work_day_dao = WorkDayDAO(db_filename=new_db_filename)
+            self.curriculum_dao = CurriculumDAO(db_filename=new_db_filename)
+            self.group_dao = GroupDAO(db_filename=new_db_filename)
+            self.subject_dao = SubjectDAO(db_filename=new_db_filename)
+
+            print("DAO пересозданы с новой базой данных.")
+
+            QMessageBox.information(self, "Успешно", f"Новая база данных для учебного года {academic_year_str} создана:\n{new_db_filename}\n\nСтарая база данных (если была) перемещена в папку 'archive'.")
+
+            # Перезагружаем данные в интерфейсе, чтобы они отображались из новой БД
+            QTimer.singleShot(0, self.load_and_display_work_days)
+
+        except FileNotFoundError:
+            print(f"Файл скрипта инициализации не найден: {base_script_path}")
+            QMessageBox.critical(self, "Ошибка", f"Файл скрипта инициализации не найден: {base_script_path}")
+        except sqlite3.Error as e:
+            print(f"Ошибка SQLite при создании/инициализации базы данных: {e}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка SQLite при создании базы данных: {e}")
+        except Exception as e:
+            print(f"Неизвестная ошибка при создании базы данных: {e}")
+            QMessageBox.critical(self, "Ошибка", f"Неизвестная ошибка при создании базы данных: {e}")
+
+    def open_create_file_dialog(self): # Обновляем метод, который подключен к btn_NewYear
+        # Вызываем создание новой базы данных
+        reply = QMessageBox.question(self, 'Подтверждение', 'Вы уверены, что хотите начать новый учебный год? Это приведёт к созданию новой базы данных и архивации старой (если она существует).',
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.create_new_database()
+    
     def load_and_display_work_days(self):
         """Загружает данные из БД и строит таблицы для текущего полугодия/семестра."""
         # print("Загрузка данных рабочих дней и учебных планов...")
@@ -2446,10 +2622,6 @@ class MainWindow(ThemedWindow):
         if hasattr(self.ui, 'btn_Subject'):
             self.ui.btn_Subject.setIcon(QIcon(self.theme_manager.get_icon_path("subject")))
 
-    def open_new_year_dialog(self):
-        dialog = YearEditDialog(self.theme_manager)
-        dialog.exec()
-
     def open_filter_dialog(self):
         dialog = FilterDialog(
             self.theme_manager,
@@ -2530,18 +2702,21 @@ class MainWindow(ThemedWindow):
         dialog.exec()
 
     def open_group_dialog(self):
-        dialog = GroupDialog(self.theme_manager)
+        dialog = GroupDialog(self.theme_manager, self.group_dao)
         dialog.exec()
-        
+
     def open_subject_dialog(self):
-        dialog = SubjectDialog(self.theme_manager)
+        dialog = SubjectDialog(self.theme_manager, self.subject_dao) 
         dialog.exec()
         
     def open_print_report(self):
         dialog = PrintReportDialog(self.theme_manager)
         dialog.exec()
-
-
+        
+    def open_new_year_dialog(self):
+        dialog = YearEditDialog(self.theme_manager, self.group_dao, self.subject_dao, self.curriculum_dao) 
+        dialog.exec()
+        
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
