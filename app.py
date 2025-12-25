@@ -9,7 +9,7 @@ import os
 import configparser
 from datetime import date, datetime, timedelta
 
-from settings.settings import update_root_path_with_db_file, get_current_db_filename, reset_to_default_db
+from settings.settings import update_root_path_with_db_file, get_current_db_filename
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QDialog, QTreeWidgetItem, QMenu, QMessageBox, QListWidgetItem, QCompleter, QHeaderView, QTableWidget, QTableWidgetItem, QGroupBox, QFileDialog
 from PyQt6.QtGui import QIcon, QPalette, QFontDatabase
@@ -31,7 +31,7 @@ from calendar_helper import CalendarTableData, setup_calendar_tables_for_half
 from services.group_services import GroupDAO
 from services.curriculum_services import CurriculumDAO
 from services.subject_services import SubjectDAO
-
+from services.resource_path import resource_path
 
 # === ThemeManager ===
 class ThemeManager(QObject):
@@ -40,7 +40,7 @@ class ThemeManager(QObject):
     def __init__(self):
         super().__init__()
 
-        self.custom_font_path = r"resources\fonts\CascadiaCode\CascadiaCode-VariableFont_wght.ttf"
+        self.custom_font_path = resource_path(r"resources\fonts\CascadiaCode\CascadiaCode-VariableFont_wght.ttf")
         self.font_family = None
 
         # Загрузка шрифта
@@ -58,9 +58,11 @@ class ThemeManager(QObject):
         else:
             print("Путь к шрифту некорректен или файл не существует")
 
+        config_path = resource_path('settings/config.ini')
+        
         # Создание объекта чтения конфига
         config = configparser.ConfigParser()
-        read_config = config.read(rf'settings/config.ini')
+        read_config = config.read(config_path)
 
         if not read_config:
             self.create_config()
@@ -74,9 +76,10 @@ class ThemeManager(QObject):
         self.current_theme = theme
         self.theme_changed.emit(theme)
         config = configparser.ConfigParser()
-        config.read(rf'settings/config.ini')
+        config_path = resource_path('settings/config.ini')
+        config.read(config_path)
         config['theme']['current_theme'] = theme
-        with open(rf'settings/config.ini', 'w', encoding='utf-8') as configfile:
+        with open(config_path, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
 
     def get_theme(self) -> str:
@@ -84,13 +87,13 @@ class ThemeManager(QObject):
 
     def get_icon_path(self, name: str) -> str:
         """Return path to icon"""
-        return os.path.join("resources", "icons", self.current_theme, f"{name}.svg")
+        return resource_path(os.path.join("resources", "icons", self.current_theme, f"{name}.svg"))
 
     def get_stylesheet(self) -> str:
         """Load QSS theme file"""
-        path = os.path.join("themes", f"{self.current_theme}.qss")
+        path = resource_path(os.path.join("themes", f"{self.current_theme}.qss"))
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(resource_path(path), "r", encoding="utf-8") as f:
                 stylesheet = f.read()
 
             # Добавляем шрифт в начало, если он загружен
@@ -112,8 +115,9 @@ class ThemeManager(QObject):
             'current_theme': 'blue'
         }
 
+        config_path = resource_path('settings/config.ini')
         # Создание конфига
-        with open(rf'settings/config.ini', 'w', encoding='utf-8') as configfile:
+        with open(config_path, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
 
 

@@ -1,5 +1,3 @@
-# settings/settings.py
-
 import os
 from pathlib import Path
 
@@ -19,6 +17,11 @@ else:
     # Если .db файлов нет, используем имя по умолчанию
     _CURRENT_DB_FILENAME = "hour_track.db"
     print(f"[DEBUG Settings Module Load] .db файлы не найдены, используется имя по умолчанию: {_CURRENT_DB_FILENAME}")
+
+def get_base_root_path():
+    """Возвращает базовую директорию проекта."""
+    # Возвращаем _BASE_ROOT_PATH как Path объект
+    return _BASE_ROOT_PATH # Важно вернуть Path объект, а не строку
 
 def update_root_path_with_db_file(full_db_path):
     """Обновляет ROOT_PATH на директорию базы данных и сохраняет имя файла."""
