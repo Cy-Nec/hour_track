@@ -182,6 +182,7 @@ class YearEditDialog(ThemedDialog):
         # Подключение сигналов от кнопок
         self.ui.btn_AddSelected.clicked.connect(self.move_selected_items_to_table)
         self.ui.btn_RemoveSelected.clicked.connect(self.move_selected_items_to_list)
+        self.ui.listWidget_Subjects.doubleClicked.connect(self.move_selected_items_to_table)
         self.ui.btn_Accept.clicked.connect(self.apply_changes)
         self.ui.btn_Cancel.clicked.connect(self.close)
         

@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from settings.settings import get_full_db_path, get_current_db_filename
+from settings.settings import get_full_db_path, get_current_db_filename, SQL_SCRIPT_PATH
 
 
 class DBBase:
@@ -20,6 +20,17 @@ class DBBase:
         # Создаем соединение
         self._connection = self.__create_connection(self.db_path)
         self.cursor = self.create_cursor()
+
+        # Проверяем, есть ли одна из таблиц в бд
+        # Если нет, то в базе данных нет таблиц и их нужно создать скриптом
+        is_groups_exits = self.table_exists("groups")
+        if not is_groups_exits:
+            # Читаем содержимое SQL-скрипта
+            sql_script_content = SQL_SCRIPT_PATH.read_text(encoding='utf-8')
+
+            # Выполняем скрипт для заполнения бд таблицами
+            self._connection.executescript(sql_script_content)
+
         # Включаем проверку внешних ключей
         self._connection.execute("PRAGMA foreign_keys = ON")
 
@@ -49,3 +60,12 @@ class DBBase:
         if self._connection:
             self._connection.close()
             self._connection = None
+
+    def table_exists(self, table_name):
+        """Проверяет, существует ли таблица в базе данных"""
+        self.cursor.execute("""SELECT name FROM sqlite_master WHERE type='table' AND name=?;""",
+                            (table_name,))
+        result = self.cursor.fetchone()
+
+        # Если результат не None, значит таблица существует
+        return result is not None

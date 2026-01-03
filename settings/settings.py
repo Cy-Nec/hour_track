@@ -5,6 +5,9 @@ _BASE_ROOT_PATH = Path(__file__).resolve().parent.parent
 # ROOT_PATH теперь изначально указывает на папку db
 ROOT_PATH = str(_BASE_ROOT_PATH / "db")
 
+# Путь до sql-скрипта таблиц бд
+SQL_SCRIPT_PATH = _BASE_ROOT_PATH / "db" / "base_script.sql"
+
 db_dir_path = _BASE_ROOT_PATH / "db"
 db_files = list(db_dir_path.glob("*.db"))
 
@@ -18,10 +21,12 @@ else:
     _CURRENT_DB_FILENAME = "hour_track.db"
     print(f"[DEBUG Settings Module Load] .db файлы не найдены, используется имя по умолчанию: {_CURRENT_DB_FILENAME}")
 
+
 def get_base_root_path():
     """Возвращает базовую директорию проекта."""
     # Возвращаем _BASE_ROOT_PATH как Path объект
-    return _BASE_ROOT_PATH # Важно вернуть Path объект, а не строку
+    return _BASE_ROOT_PATH  # Важно вернуть Path объект, а не строку
+
 
 def update_root_path_with_db_file(full_db_path):
     """Обновляет ROOT_PATH на директорию базы данных и сохраняет имя файла."""
@@ -31,19 +36,23 @@ def update_root_path_with_db_file(full_db_path):
     ROOT_PATH = str(full_path_obj.parent)
     # Сохраняем имя файла БД
     _CURRENT_DB_FILENAME = full_path_obj.name
-    print(f"[DEBUG Settings] update_root_path_with_db_file вызван. ROOT_PATH теперь: {ROOT_PATH}, _CURRENT_DB_FILENAME: {_CURRENT_DB_FILENAME}")
+    print(
+        f"[DEBUG Settings] update_root_path_with_db_file вызван. ROOT_PATH теперь: {ROOT_PATH}, _CURRENT_DB_FILENAME: {_CURRENT_DB_FILENAME}")
+
 
 def get_current_db_filename():
     """Возвращает имя текущего файла базы данных."""
-    print(f"[DEBUG Settings] get_current_db_filename возвращает: {_CURRENT_DB_FILENAME}") # Добавлено для отладки
+    print(f"[DEBUG Settings] get_current_db_filename возвращает: {_CURRENT_DB_FILENAME}")  # Добавлено для отладки
     return _CURRENT_DB_FILENAME
+
 
 def get_full_db_path(db_filename=None):
     """Возвращает полный путь к файлу базы данных."""
     filename_to_use = db_filename if db_filename else _CURRENT_DB_FILENAME
     full_path = os.path.join(ROOT_PATH, filename_to_use)
-    print(f"[DEBUG Settings] get_full_db_path для '{filename_to_use}' возвращает: {full_path}") # Добавлено для отладки
+    print(f"[DEBUG Settings] get_full_db_path для '{filename_to_use}' возвращает: {full_path}")  # Добавлено для отладки
     return full_path
+
 
 def reset_to_default_db():
     """Сбрасывает ROOT_PATH и имя БД на значения по умолчанию."""
@@ -53,4 +62,5 @@ def reset_to_default_db():
     db_dir = os.path.join(root_dir, "db")
     os.makedirs(db_dir, exist_ok=True)
     ROOT_PATH = db_dir
-    print(f"[DEBUG Settings] reset_to_default_db вызван. ROOT_PATH: {ROOT_PATH}, _CURRENT_DB_FILENAME: {_CURRENT_DB_FILENAME}")
+    print(
+        f"[DEBUG Settings] reset_to_default_db вызван. ROOT_PATH: {ROOT_PATH}, _CURRENT_DB_FILENAME: {_CURRENT_DB_FILENAME}")
